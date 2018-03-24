@@ -68,18 +68,18 @@ void setup()
 void loop()
 {
   if (Sled.isError()) return;
-  Sled.printGridOffAll();
+  Sled.printDigitOffAll();
   // Test all digits one by one
-  for (unsigned char grid = 0; grid < Sled.getGrids(); grid++)
+  for (unsigned char digit = 0; digit < Sled.getGrids(); digit++)
   {
     // Display segments one by one of a digit
     for (unsigned char segment = 0; segment < 7; segment++)
     {
-      Sled.printGrid(grid, 0x01 << segment);
+      Sled.printDigit(digit, 0x01 << segment);
       displayTest();
     }
     // Display all segments of a digit
-      Sled.printGrid(grid);
+      Sled.printDigit(digit);
       displayTest();
   }
   delay(PERIOD_TEST);
