@@ -1,11 +1,11 @@
 /*
   NAME:
-  Digit segments functionality test for a display module with TM1638 controller
-  and 7-segment digital tubes
+  Brigthness test of a display module with TM1638 controller and 7-segment
+  digital tubes
 
   DESCRIPTION:
-  The sketch tests all 7 segments of each digital tube displaying them one by one
-  on each tube one by one.
+  The sketch turns on all glyph segments of all digital tubes and changes their
+  brightness by controlling contrast.
   - Connect controller's pins to Arduino's pins as follows:
     - TM1638 pin CLK to Arduino pin D2
     - TM1638 pin DIO to Arduino pin D3
@@ -14,6 +14,7 @@
     - TM1638 pin GND to Arduino pin GND
   - The sketch is configured to work with all 8 digital tubes with common cathode.
   - The sketch does not manipulate radix segments of digital tubes.
+  - The sketch signals brightness level by red LEDs of the display module.
 
   LICENSE:
   This program is free software; you can redistribute it and/or modify
@@ -23,10 +24,10 @@
   Author: Libor Gabaj
 */
 #include "gbj_tm1638.h"
-#define SKETCH "GBJ_TM1638_TEST_SEGMENTS 1.0.0"
+#define SKETCH "GBJ_TM1638_TEST_BRIGHTNESS 1.0.0"
 
 const unsigned int PERIOD_TEST = 1000;  // Time in miliseconds between tests
-const unsigned int PERIOD_PATTERN = 300; // Time delay in miliseconds for displaying a pattern
+const unsigned int PERIOD_PATTERN = 500; // Time delay in miliseconds for displaying a pattern
 const unsigned char PIN_TM1638_CLK = 2;
 const unsigned char PIN_TM1638_DIO = 3;
 const unsigned char PIN_TM1638_STB = 4;
@@ -62,25 +63,20 @@ void setup()
     errorHandler();
     return;
   }
+  Sled.printDigitOnAll();
 }
 
 
 void loop()
 {
   if (Sled.isError()) return;
-  Sled.printDigitOffAll();
-  // Test all digits one by one
-  for (unsigned char digit = 0; digit < Sled.getGrids(); digit++)
+  // Test all contrast levels
+  for (unsigned char contrast = 0; contrast < 8; contrast++)
   {
-    // Display segments one by one of a digit
-    for (unsigned char segment = 0; segment < 7; segment++)
-    {
-      Sled.printDigit(digit, 0x01 << segment);
-      displayTest();
-    }
-    // Display all segments of a digit
-      Sled.printDigit(digit);
-      displayTest();
+    Sled.printLedRedOffAll();
+    Sled.printLedRedOn(contrast);
+    Sled.setContrast(contrast);
+    displayTest();
   }
   delay(PERIOD_TEST);
 }

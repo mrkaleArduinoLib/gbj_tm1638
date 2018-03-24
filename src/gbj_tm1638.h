@@ -60,8 +60,13 @@ public:
   Initialize display geometry
 
   DESCRIPTION:
-  The constructor methodsanitizes and stores physical features of the display
+  The constructor method sanitizes and stores physical features of the display
   to the class instance object.
+  - By data sheet at common cathode digital tubes the maximal number of segments
+    can be 10, which TM1638 has implemented. However, the controller can address
+    just 16 position, so that the sum of tubes and LEDs cannot exceed 16, i.e.,
+    at 10 tubes used only 6 LEDs could be used at the same time.
+  - Most of display modules are constructed with 8 digital tubes and 8 LEDs.
 
   PARAMETERS:
   pinClk - Microcontroller pin's number utilized as a serial clock.
@@ -75,15 +80,30 @@ public:
            - Limited range: 0 ~ 255 (by microcontroller datasheet)
 
   pinStb - Microcontroller pin's number utilized as a strobe (chip select).
-           Potentially it might be an array for more controllers.
           - Data type: non-negative integer
           - Default value: 4
           - Limited range: 0 ~ 255 (by microcontroller datasheet)
 
+  digits - Number of digital tubes that should be controlled. Usually it is the
+           number of present tubes on a display module, but it can be smaller,
+           if not all tubes are inteded to be utilized.
+           - Data type: non-negative integer
+           - Default value: 8
+           - Limited range: 0 ~ 8 (by microcontroller datasheet)
+
+  leds - Number of LEDs that should be controlled. Usually it is the
+         number of present LEDs on a display module, but it can be smaller,
+         if not all LEDs are inteded to be utilized. A display module has used
+         two-color LEDs, so that its amount must be the same.
+         - Data type: non-negative integer
+         - Default value: 8
+         - Limited range: 0 ~ 8 (by microcontroller datasheet)
+
   RETURN:
   Result code.
 */
-gbj_tm1638(uint8_t pinClk = 2, uint8_t pinDio = 3, uint8_t pinStb = 4);
+gbj_tm1638(uint8_t pinClk = 2, uint8_t pinDio = 3, uint8_t pinStb = 4, \
+  uint8_t digits = DIGITS, uint8_t leds = LEDS);
 
 
 /*
@@ -119,6 +139,42 @@ uint8_t display();
 
 
 /*
+  Turn display off or on
+
+  DESCRIPTION:
+  Particular method either turns on or off the entired display module including
+  digital tubes and LEDs without changing current contrast level.
+  - Both methods are suitable for makin a display module blink.
+
+  PARAMETERS: none
+
+  RETURN:
+  Result code.
+*/
+uint8_t displayOn();
+uint8_t displayOff();
+
+
+/*
+  Clear entire digital tubes including radixes and set printing position
+
+  DESCRIPTION:
+  The method turns off all segments including for radixes of all digital tubes
+  and then sets the printing position for subsequent printing.
+
+  PARAMETERS:
+  digit - Number of digital tube counting from 0 where the printing should start
+          after display clearing.
+          - Data type: non-negative integer
+          - Default value: 0
+          - Limited range: 0 ~ 7 (constructor's parameter digits - 1)
+
+  RETURN: none
+*/
+inline void displayClear(uint8_t digit = 0) { printDigitOffAll(); printRadixOffAll(); placePrint(digit); }
+
+
+/*
   Manipulate digital tubes' radixes of a display module
 
   DESCRIPTION:
@@ -127,7 +183,7 @@ uint8_t display();
   (first 7 segments) and on LEDs in the screen buffer.
 
   PARAMETERS:
-  grid - Driver's digit tube number counting from 0, which radix segment
+  digit - Driver's digit tube number counting from 0, which radix segment
          should be manipulated.
          - Data type: non-negative integer
          - Default value: 0
@@ -135,12 +191,130 @@ uint8_t display();
 
   RETURN: none
 */
-inline void printRadixOn(uint8_t grid = 0) { if (grid < DIGITS) _print.buffer[addrGrid(grid)] |= 0x80; };
-inline void printRadixOff(uint8_t grid = 0) { if (grid < DIGITS) _print.buffer[addrGrid(grid)] &= ~0x80; };
-inline void printRadixToggle(uint8_t grid = 0) { if (grid < DIGITS) _print.buffer[addrGrid(grid)] ^= 0x80; };
-inline void printRadixOnAll() { for (uint8_t grid = 0; grid < DIGITS; grid++) printRadixOn(grid); };
-inline void printRadixOffAll() { for (uint8_t grid = 0; grid < DIGITS; grid++) printRadixOff(grid); };
-inline void printRadixToggleAll() { for (uint8_t grid = 0; grid < DIGITS; grid++) printRadixToggle(grid); };
+inline void printRadixOn(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] |= 0x80; }
+inline void printRadixOff(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] &= ~0x80; }
+inline void printRadixToggle(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] ^= 0x80; }
+inline void printRadixOnAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOn(digit); }
+inline void printRadixOffAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOff(digit); }
+inline void printRadixToggleAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixToggle(digit); }
+
+
+/*
+  Manipulate digit segments
+
+  DESCRIPTION:
+  The particular method sets glyph segments (first 7 ones) of particular digit
+  (digital tube) without influence on its radix segment in the screen buffer.
+
+  PARAMETERS:
+  digit - Driver's digit (digital tube) number counting from 0, which glyph
+         segments should be manipulated.
+         - Data type: non-negative integer
+         - Default value: 0
+         - Limited range: 0 ~ 7
+
+  segmentMask - Bit mask defining what segments should be turned on. Segments
+                are marked starting from A to G and relate to mask bits 0 to 6
+                counting from least significant bit. The 7th bit relates to radix
+                segment and therefore it is ignored.
+               - Data type: non-negative integer
+               - Default value: 0xFF (all glyph segments turned on)
+               - Limited range: 0 ~ 127
+
+  RETURN: none
+*/
+inline void printDigit(uint8_t digit = 0, uint8_t segmentMask = 0x7F) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
+inline void printDigitOn(uint8_t digit = 0) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
+inline void printDigitOff(uint8_t digit = 0) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
+inline void printDigitOnAll() { gridWrite(0x7F); }
+inline void printDigitOffAll() { gridWrite(0x00); }
+
+
+/*
+  Set printing position within digital tubes
+
+  DESCRIPTION:
+  The method stores desired position of a digital tube where the subsequent
+  print should start.
+
+  PARAMETERS:
+  digit - Number of digital tube counting from 0 where the printing should start.
+          - Data type: non-negative integer
+          - Default value: 0
+          - Limited range: 0 ~ 7 (constructor's parameter digits - 1)
+
+  RETURN: none
+*/
+inline void placePrint(uint8_t digit = 0) { if (digit < _status.digits) _print.digit = digit; };
+
+
+/*
+  Print text at desired printing position
+
+  DESCRIPTION:
+  The method prints text starting on provided or default position on digital tubes.
+  - The method clears the display right before printing.
+
+  PARAMETERS:
+  text - Pointer to a text that should be printed.
+         - Data type: non-negative integer
+         - Default value: none
+         - Limited range: microcontroller addressing range
+
+  digit - Printing position for starting the printing.
+          - Data type: non-negative integer
+          - Default value: 0
+          - Limited range: 0 ~ 7 (constructor's parameter digits - 1)
+
+  RETURN: none
+*/
+inline void printText(const char* text, uint8_t digit = 0) { displayClear(digit); print(text); };
+inline void printText(String text, uint8_t digit = 0) { displayClear(digit); print(text); };
+
+
+/*
+  Print class inheritance
+
+  DESCRIPTION:
+  The library inherits the system Print class, so that all regular print
+  functions can be used.
+  - Actually all print functions eventually call one of listed write methods,
+    so that all of them should be implemented.
+  - If some character (ASCII) code is not present in the font table, i.e., it is
+    unknown for the library, that character is ignored and not displayed.
+  - If unknown character has ASCII code of comma, dot, or colon, the library
+    turns on the radix segments of the recently displayed digit (lastly manipulated
+    digit). Thus, the decimal points or colon can be present in displayed string
+    at proper position and does not need to be control separately.
+
+  PARAMETERS:
+  ascii - ASCII code of a character that should be displayed at the current digit
+          position. The methods is usually utilized internally by system prints.
+          - Data type: non-negative integer
+          - Default value: none
+          - Limited range: 0 ~ 255
+
+  text - Pointer to a nul terminated string that should be displayed from the
+         very beginnng of the display, i.e., from the first digit.
+         - Data type: non-negative integer
+         - Default value: none
+         - Limited range: microcontroller addressing range
+
+  buffer - Pointer to a string, which part should be displayed from the very
+           beginnng of the display, i.e., from the first digit.
+           - Data type: non-negative integer
+           - Default value: none
+           - Limited range: microcontroller addressing range
+
+  size - Number of characters that should be displayed from the very beginnng of
+         the display, i.e., from the first digit.
+         - Data type: non-negative integer
+         - Default value: none
+         - Limited range: microcontroller addressing range
+*/
+size_t write(uint8_t ascii);
+size_t write(const char* text);
+size_t write(const uint8_t* buffer, size_t size);
 
 
 /*
@@ -158,12 +332,12 @@ inline void printRadixToggleAll() { for (uint8_t grid = 0; grid < DIGITS; grid++
 
   RETURN: none
 */
-inline void printLedRedOn(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] |= LED_RED; };
-inline void printLedRedOff(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] &= ~LED_RED; };
-inline void printLedRedToggle(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] ^= LED_RED; };
-inline void printLedRedOnAll() { for (uint8_t led = 0; led < LEDS; led++) printLedRedOn(led); };
-inline void printLedRedOffAll() { for (uint8_t led = 0; led < LEDS; led++) printLedRedOff(led); };
-inline void printLedRedToggleAll() { for (uint8_t led = 0; led < LEDS; led++) printLedRedToggle(led); };
+inline void printLedRedOn(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] |= LED_RED; }
+inline void printLedRedOff(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_RED; }
+inline void printLedRedToggle(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] ^= LED_RED; }
+inline void printLedRedOnAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedOn(led); }
+inline void printLedRedOffAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedOff(led); }
+inline void printLedRedToggleAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedToggle(led); }
 
 
 /*
@@ -182,12 +356,12 @@ inline void printLedRedToggleAll() { for (uint8_t led = 0; led < LEDS; led++) pr
 
   RETURN: none
 */
-inline void printLedGreenOn(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] |= LED_GREEN; };
-inline void printLedGreenOff(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] &= ~LED_GREEN; };
-inline void printLedGreenToggle(uint8_t led = 0) { if (led < LEDS) _print.buffer[addrLed(led)] ^= LED_GREEN; };
-inline void printLedGreenOnAll() { for (uint8_t led = 0; led < LEDS; led++) printLedGreenOn(led); };
-inline void printLedGreenOffAll() { for (uint8_t led = 0; led < LEDS; led++) printLedGreenOff(led); };
-inline void printLedGreenToggleAll() { for (uint8_t led = 0; led < LEDS; led++) printLedGreenToggle(led); };
+inline void printLedGreenOn(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] |= LED_GREEN; }
+inline void printLedGreenOff(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_GREEN; }
+inline void printLedGreenToggle(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] ^= LED_GREEN; }
+inline void printLedGreenOnAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenOn(led); }
+inline void printLedGreenOffAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenOff(led); }
+inline void printLedGreenToggleAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenToggle(led); }
 
 
 /*
@@ -205,90 +379,33 @@ inline void printLedGreenToggleAll() { for (uint8_t led = 0; led < LEDS; led++) 
 
   RETURN: none
 */
-inline void printLedAllOff() { printLedRedOffAll(); printLedGreenOffAll(); };
-
-
-/*
-  Manipulate grid segments
-
-  DESCRIPTION:
-  The particular method sets glyph segments (first 7 ones) of particular grid
-  (digital tube) without influence on its radix segment in the screen buffer.
-
-  PARAMETERS:
-  grid - Driver's grid (digital tube) number counting from 0, which glyph
-         segments should be manipulated.
-         - Data type: non-negative integer
-         - Default value: 0
-         - Limited range: 0 ~ 7
-
-  segmentMask - Bit mask defining what segments should be turned on. Segments
-                are marked starting from A to G and relate to mask bits 0 to 6
-                counting from least significant bit. The 7th bit relates to radix
-                segment and therefore it is ignored.
-               - Data type: non-negative integer
-               - Default value: 0xFF (all glyph segments turned on)
-               - Limited range: 0 ~ 127
-
-  RETURN: none
-*/
-inline void printGrid(uint8_t grid = 0, uint8_t segmentMask = 0x7F) { if (grid < DIGITS) gridWrite(segmentMask, grid, grid); };
-inline void printGridOn(uint8_t grid = 0) { if (grid < DIGITS) gridWrite(0x7F, grid, grid); };
-inline void printGridOff(uint8_t grid = 0) { if (grid < DIGITS) gridWrite(0x00, grid, grid); };
-inline void printGridOnAll() { gridWrite(0x7F); };
-inline void printGridOffAll() { gridWrite(0x00); };
-
-/*
-  Print class inheritance
-
-  DESCRIPTION:
-  The library inherits the system Print class, so that all regular print
-  functions can be used.
-  - Actually all print functions eventually call one of listed write methods,
-    so that all of them should be implemented.
-  - If some character (ASCII) code is not present in the font table, i.e., it is
-    unknown for the library, that character is ignored and not displayed.
-  - If unknown character has ASCII code of comma, dot, or colon, the library
-    turns on the radix segments of the recently displayed digit (lastly manipulated
-    grid). Thus, the decimal points or colon can be present in displayed string
-    at proper position and does not need to be control separately.
-
-  PARAMETERS:
-  ascii - ASCII code of a character that should be displayed at the current grid
-          position. The methods is usually utilized internally by system prints.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: 0 ~ 255
-
-  text - Pointer to a nul terminated string that should be displayed from the
-         very beginnng of the display, i.e., from the first digit.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: microcontroller addressing range
-
-  buffer - Pointer to a string, which part should be displayed from the very
-           beginnng of the display, i.e., from the first digit.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: microcontroller addressing range
-
-  size - Number of characters that should be displayed from the very beginnng of
-         the display, i.e., from the first digit.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: microcontroller addressing range
-*/
-size_t write(uint8_t ascii);
-size_t write(const char* text);
-size_t write(const uint8_t* buffer, size_t size);
+inline void printLedAllOn() { printLedRedOnAll(); printLedGreenOnAll(); }
+inline void printLedAllOff() { printLedRedOffAll(); printLedGreenOffAll(); }
 
 
 //------------------------------------------------------------------------------
 // Public setters - they usually return result code.
 //------------------------------------------------------------------------------
-inline void initLastResult() { _status.lastResult = GBJ_TM1638_SUCCESS; };
-inline uint8_t setLastResult(uint8_t lastResult = GBJ_TM1638_SUCCESS) { return _status.lastResult = lastResult; };
-uint8_t setContrastControl(uint8_t contrast = 3);
+inline void initLastResult() { _status.lastResult = GBJ_TM1638_SUCCESS; }
+inline uint8_t setLastResult(uint8_t lastResult = GBJ_TM1638_SUCCESS) { return _status.lastResult = lastResult; }
+
+
+/*
+  Set contrast of the digital tubes and LEDs
+
+  DESCRIPTION:
+  The method set constrast level of all digital tubes and LEDs and simultaniously
+  turns display on.
+
+  PARAMETERS:
+  contrast - Level of constrast/brightness.
+             - Data type: non-negative integer
+             - Default value: 3
+             - Limited range: 0 ~ 7
+
+  RETURN: none
+*/
+uint8_t setContrast(uint8_t contrast = 3);
 
 
 /*
@@ -328,11 +445,12 @@ void setFont(const uint8_t* fontTable, uint8_t fontTableSize);
 //------------------------------------------------------------------------------
 // Public getters
 //------------------------------------------------------------------------------
-inline uint8_t getLastResult() { return _status.lastResult; }; // Result of a recent operation
-inline uint8_t getLastCommand() { return _status.lastCommand; }; // Command code of a recent operation
-inline uint8_t getGrids() { return DIGITS; }; // Digital tubes for displaying
-inline uint8_t getLeds() { return LEDS; }; // LEDs for displaying
-inline uint8_t getPrint() { return _print.grid; }; // Current grid position
+inline uint8_t getLastResult() { return _status.lastResult; } // Result of a recent operation
+inline uint8_t getLastCommand() { return _status.lastCommand; } // Command code of a recent operation
+inline uint8_t getDigits() { return _status.digits; } // Digital tubes for displaying
+inline uint8_t getLeds() { return _status.leds; } // LEDs for displaying
+inline uint8_t getContrast() { return _status.contrast; } // Current contrast
+inline uint8_t getPrint() { return _print.digit; } // Current digit position
 inline bool    isSuccess() { return _status.lastResult == GBJ_TM1638_SUCCESS; } // Flag about successful recent operation
 inline bool    isError() { return !isSuccess(); } // Flag about erroneous recent operation
 
@@ -360,8 +478,8 @@ enum Commands
 };
 enum Geometry // Controller TM1638
 {
-  DIGITS = 8, // Digital tubes
-  LEDS = 8, // Two-color LEDs
+  DIGITS = 8, // Maximal allowed digital tubes
+  LEDS = 8, // Maximal allowed two-color LEDs
 };
 enum Timing
 {
@@ -388,7 +506,7 @@ struct
 {
   uint8_t buffer[DIGITS + LEDS];  // Screen buffer
   // uint8_t width;  // Number of grids for printing characters
-  uint8_t grid; // Current grid for next printing
+  uint8_t digit; // Current digit for next printing
 } _print; // Display hardware parameters for printing
 struct Bitmap
 {
@@ -402,21 +520,24 @@ struct
   uint8_t pinClk; // Number of serial clock pin
   uint8_t pinDio; // Number of data input/output pin
   uint8_t pinStb; // Number of strobe pin
+  uint8_t digits; // Amount of controlled digital tubes
+  uint8_t leds; // Amount of controlled LEDs
+  uint8_t contrast; // Current contrast level
 } _status;  // Microcontroller status features
 
 
 //------------------------------------------------------------------------------
 // Private methods
 //------------------------------------------------------------------------------
-inline void swapByte(uint8_t a, uint8_t b) { if (a > b) {uint8_t t = a; a = b; b = t;} };
-inline uint8_t addrGrid(uint8_t grid) { return 2 * grid; };
-inline uint8_t addrLed(uint8_t led) { return 2 * led + 1; };
-inline uint8_t setLastCommand(uint8_t lastCommand) { return _status.lastCommand = lastCommand; };
+inline void swapByte(uint8_t a, uint8_t b) { if (a > b) {uint8_t t = a; a = b; b = t;} }
+inline uint8_t addrGrid(uint8_t digit) { return 2 * digit; }
+inline uint8_t addrLed(uint8_t led) { return 2 * led + 1; }
+inline uint8_t setLastCommand(uint8_t lastCommand) { return _status.lastCommand = lastCommand; }
 void waitPulseClk();  // Delay for clock pulse duration
 void beginTransmission(); // Start condition
 void endTransmission(); // Stop condition
 void busWrite(uint8_t data);  // Write byte to the bus
-void gridWrite(uint8_t segmentMask = 0x00, uint8_t gridStart = 0, uint8_t gridStop = DIGITS); // Fill screen buffer with grid masks
+void gridWrite(uint8_t segmentMask = 0x00, uint8_t gridStart = 0, uint8_t gridStop = DIGITS); // Fill screen buffer with digit masks
 uint8_t busSend(uint8_t command); // Send sole command
 uint8_t busSend(uint8_t command, uint8_t data); // Send data at fixed address
 uint8_t busSend(uint8_t command, uint8_t* buffer, uint8_t bufferBytes); // Send data at auto-increment addressing

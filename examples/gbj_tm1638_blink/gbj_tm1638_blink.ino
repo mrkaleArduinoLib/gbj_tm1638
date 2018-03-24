@@ -1,19 +1,23 @@
 /*
   NAME:
-  Digit segments functionality test for a display module with TM1638 controller
-  and 7-segment digital tubes
+  Demo sketch for blinking all digital tubes of a display module with TM1638
+  controller
 
   DESCRIPTION:
-  The sketch tests all 7 segments of each digital tube displaying them one by one
-  on each tube one by one.
+  The sketch turns on all 7 glyph segments of each digital tube and blink them
+  at once while the active radix segment at particular tube signals the contrast
+  (brightness level).
   - Connect controller's pins to Arduino's pins as follows:
     - TM1638 pin CLK to Arduino pin D2
     - TM1638 pin DIO to Arduino pin D3
     - TM1638 pin STB to Arduino pin D4
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
-  - The sketch is configured to work with all 8 digital tubes with common cathode.
-  - The sketch does not manipulate radix segments of digital tubes.
+  - The sketch is configured to work with all 8 digital tubes and all 8 LEDs
+    with common cathode.
+  - The digital tubes and LEDs are blinked several times (default 3) before
+    changing contrast to the next level.
+  - The sketch signals a contrast level by corresponding radix activated.
 
   LICENSE:
   This program is free software; you can redistribute it and/or modify
@@ -23,13 +27,14 @@
   Author: Libor Gabaj
 */
 #include "gbj_tm1638.h"
-#define SKETCH "GBJ_TM1638_TEST_SEGMENTS 1.0.0"
+#define SKETCH "GBJ_TM1638_BLINK 1.0.0"
 
 const unsigned int PERIOD_TEST = 1000;  // Time in miliseconds between tests
-const unsigned int PERIOD_PATTERN = 300; // Time delay in miliseconds for displaying a pattern
+const unsigned int PERIOD_PATTERN = 500; // Time delay in miliseconds for displaying a pattern
 const unsigned char PIN_TM1638_CLK = 2;
 const unsigned char PIN_TM1638_DIO = 3;
 const unsigned char PIN_TM1638_STB = 4;
+const unsigned char TEST_BLINKS = 3;
 
 gbj_tm1638 Sled = gbj_tm1638(PIN_TM1638_CLK, PIN_TM1638_DIO, PIN_TM1638_STB);
 
@@ -62,25 +67,29 @@ void setup()
     errorHandler();
     return;
   }
+  // Setup for test
+  Sled.printDigitOnAll();
+  Sled.printLedAllOn();
+  Sled.displayOff();
 }
 
 
 void loop()
 {
   if (Sled.isError()) return;
-  Sled.printDigitOffAll();
-  // Test all digits one by one
-  for (unsigned char digit = 0; digit < Sled.getGrids(); digit++)
+  // Cycle contrast
+  for (unsigned char contrast = 0; contrast < 8; contrast++)
   {
-    // Display segments one by one of a digit
-    for (unsigned char segment = 0; segment < 7; segment++)
+    Sled.printRadixOffAll();
+    Sled.setContrast(contrast);
+    Sled.printRadixOn(contrast);
+    // Cycle blinks
+    for (unsigned char i = 0; i < TEST_BLINKS; i++)
     {
-      Sled.printDigit(digit, 0x01 << segment);
+      Sled.displayOff();
+      displayTest();
+      Sled.displayOn();
       displayTest();
     }
-    // Display all segments of a digit
-      Sled.printDigit(digit);
-      displayTest();
   }
-  delay(PERIOD_TEST);
 }

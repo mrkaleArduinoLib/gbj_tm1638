@@ -1,0 +1,12 @@
+{
+  "name": "gbjTM1638",
+  "keywords": "display, 7segment, LED",
+  "description": "The library controls TM1638 controller for display modules with 8 digital 7-segment tubes, 8 two-color or one-color LEDs, and 8 keys. It inherits the system Print class in order to use method print() with various datatypes. The library imports font definition from external include file.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrkaleArduinoLib/gbj_tm1638.git"
+  },
+  "version": "1.0.0",
+  "frameworks": "arduino",
+  "platforms": "atmelavr"
+}

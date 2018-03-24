@@ -1,11 +1,9 @@
 /*
   NAME:
-  Digit segments functionality test for a display module with TM1638 controller
-  and 7-segment digital tubes
+  Demo of text and number printing with the library gbj_tm1638
 
   DESCRIPTION:
-  The sketch tests all 7 segments of each digital tube displaying them one by one
-  on each tube one by one.
+  The sketch prints some informative texts on the display and count down and up.
   - Connect controller's pins to Arduino's pins as follows:
     - TM1638 pin CLK to Arduino pin D2
     - TM1638 pin DIO to Arduino pin D3
@@ -13,7 +11,7 @@
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
   - The sketch is configured to work with all 8 digital tubes with common cathode.
-  - The sketch does not manipulate radix segments of digital tubes.
+  - The sketch utilizes basic font and prints with system functions.
 
   LICENSE:
   This program is free software; you can redistribute it and/or modify
@@ -23,13 +21,15 @@
   Author: Libor Gabaj
 */
 #include "gbj_tm1638.h"
-#define SKETCH "GBJ_TM1638_TEST_SEGMENTS 1.0.0"
+#include "../extras/font7seg_basic.h"
+#define SKETCH "GBJ_TM1638_PRINT_TIME 1.0.0"
 
-const unsigned int PERIOD_TEST = 1000;  // Time in miliseconds between tests
-const unsigned int PERIOD_PATTERN = 300; // Time delay in miliseconds for displaying a pattern
+const unsigned int PERIOD_TEST = 2000;  // Time in miliseconds between tests
+const unsigned int PERIOD_VALUE = 100; // Time delay in miliseconds for displaying a value
 const unsigned char PIN_TM1638_CLK = 2;
 const unsigned char PIN_TM1638_DIO = 3;
 const unsigned char PIN_TM1638_STB = 4;
+const unsigned int TEST_LIMIT = 150;
 
 gbj_tm1638 Sled = gbj_tm1638(PIN_TM1638_CLK, PIN_TM1638_DIO, PIN_TM1638_STB);
 
@@ -39,13 +39,14 @@ void errorHandler()
   if (Sled.isSuccess()) return;
   Serial.print("Error: ");
   Serial.println(Sled.getLastResult());
+  Serial.println(Sled.getLastCommand());
 }
 
 
 void displayTest()
 {
   if (Sled.display()) errorHandler();
-  delay(PERIOD_PATTERN);
+  delay(PERIOD_TEST);
 }
 
 
@@ -55,9 +56,18 @@ void setup()
   Serial.println(SKETCH);
   Serial.println("Libraries:");
   Serial.println(GBJ_TM1638_VERSION);
+  Serial.println(GBJ_FONT7SEG_VERSION);
   Serial.println("---");
   // Initialize controller
-  if (Sled.begin())
+  Sled.begin();
+  if (Sled.isError())
+  {
+    errorHandler();
+    return;
+  }
+
+  Sled.setFont(gbjFont7segTable, sizeof(gbjFont7segTable));
+  if (Sled.isError())
   {
     errorHandler();
     return;
@@ -68,19 +78,17 @@ void setup()
 void loop()
 {
   if (Sled.isError()) return;
-  Sled.printDigitOffAll();
-  // Test all digits one by one
-  for (unsigned char digit = 0; digit < Sled.getGrids(); digit++)
+  Sled.printText("Init");
+  displayTest();
+  for (unsigned int i = 0; i < TEST_LIMIT; i++)
   {
-    // Display segments one by one of a digit
-    for (unsigned char segment = 0; segment < 7; segment++)
-    {
-      Sled.printDigit(digit, 0x01 << segment);
-      displayTest();
-    }
-    // Display all segments of a digit
-      Sled.printDigit(digit);
-      displayTest();
+    Sled.displayClear();
+    Sled.print(i / 100.0, 2);
+    Sled.placePrint(4);
+    Sled.print((TEST_LIMIT - i) / 100.0, 2);
+    Sled.display();
+    delay(PERIOD_VALUE);
   }
-  delay(PERIOD_TEST);
+  Sled.printText("End", 5);
+  displayTest();
 }

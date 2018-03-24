@@ -66,28 +66,28 @@ void loop()
 {
   if (Sled.isError()) return;
   // Display radixes one by one
-  for (unsigned char grid = 0; grid < Sled.getLeds(); grid++)
+  for (unsigned char digit = 0; digit < Sled.getLeds(); digit++)
   {
-    Sled.printRadixOn(grid);
+    Sled.printRadixOn(digit);
     displayTest();
-    Sled.printRadixOff(grid);
+    Sled.printRadixOff(digit);
   }
-  for (signed char grid = Sled.getLeds() - 2; grid >= 0; grid--)
+  for (signed char digit = Sled.getLeds() - 2; digit >= 0; digit--)
   {
-    Sled.printRadixOn(grid);
+    Sled.printRadixOn(digit);
     displayTest();
-    Sled.printRadixOff(grid);
+    Sled.printRadixOff(digit);
   }
   displayTest();
   // Display radixes as thermometer
-  for (unsigned char grid = 0; grid < Sled.getLeds(); grid++)
+  for (unsigned char digit = 0; digit < Sled.getLeds(); digit++)
   {
-    Sled.printRadixOn(grid);
+    Sled.printRadixOn(digit);
     displayTest();
   }
-  for (signed char grid = Sled.getLeds() - 1; grid >=0; grid--)
+  for (signed char digit = Sled.getLeds() - 1; digit >=0; digit--)
   {
-    Sled.printRadixOff(grid);
+    Sled.printRadixOff(digit);
     displayTest();
   }
 }
