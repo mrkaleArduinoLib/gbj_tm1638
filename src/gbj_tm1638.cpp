@@ -2,13 +2,14 @@
 
 
 gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
-  uint8_t digits, uint8_t leds)
+  uint8_t digits, uint8_t leds, uint8_t keys)
 {
   _status.pinClk = pinClk;
   _status.pinDio = pinDio;
   _status.pinStb = pinStb;
   _status.digits = min(digits, DIGITS);
   _status.leds = min(leds, LEDS);
+  _status.keys = min(keys, KEYS);
 }
 
 
@@ -24,11 +25,9 @@ uint8_t gbj_tm1638::begin()
   pinMode(_status.pinDio, OUTPUT);
   pinMode(_status.pinStb, OUTPUT);
   // Initialize controller
-  printDigitOffAll();
-  printRadixOffAll();
-  printLedAllOff();
-  placePrint();
-  return setContrast();
+  moduleClear();
+  if (setContrast()) return getLastResult();
+  return display();
 }
 
 
@@ -106,6 +105,25 @@ uint8_t gbj_tm1638::displayOff()
 
 
 //------------------------------------------------------------------------------
+// Keypad processing
+//------------------------------------------------------------------------------
+void gbj_tm1638::registerHandler(gbj_tm1638_handler handler)
+{
+  _keyProcesing = handler;
+}
+
+
+void gbj_tm1638::run()
+{
+  uint32_t tsNow = millis();
+  if (tsNow - _status.scanTimestamp >= TIMING_SCAN)
+  {
+    _status.scanTimestamp = tsNow;
+    processKeypad();
+  }
+}
+
+//------------------------------------------------------------------------------
 // Setters
 //------------------------------------------------------------------------------
 uint8_t gbj_tm1638::setContrast(uint8_t contrast)
@@ -157,6 +175,14 @@ void gbj_tm1638::busWrite(uint8_t data)
 }
 
 
+uint8_t gbj_tm1638::busRead()
+{
+  digitalWrite(_status.pinClk, LOW); // For active rising edge of clock pulse
+  uint8_t data = shiftIn(_status.pinDio, _status.pinClk, LSBFIRST);
+  return data;
+}
+
+
 uint8_t gbj_tm1638::busSend(uint8_t command)
 {
   beginTransmission();
@@ -189,6 +215,23 @@ uint8_t gbj_tm1638::busSend(uint8_t command, uint8_t* buffer, uint8_t bufferItem
 }
 
 
+uint8_t gbj_tm1638::busReceive(uint8_t command, uint8_t* buffer)
+{
+  beginTransmission();
+  busWrite(setLastCommand(command));
+  waitPulseClk();
+  // Read bytes
+  pinMode(_status.pinDio, INPUT);
+  for (uint8_t bufferIndex = 0; bufferIndex < BYTES_SCAN; bufferIndex++)
+  {
+    buffer[bufferIndex] = busRead();
+  }
+  pinMode(_status.pinDio, OUTPUT);
+  endTransmission();
+  return getLastResult();
+}
+
+
 // The method leaves digit cursor after last print digit
 void gbj_tm1638::gridWrite(uint8_t segmentMask, uint8_t gridStart, uint8_t gridStop)
 {
@@ -216,4 +259,62 @@ uint8_t gbj_tm1638::getFontMask(uint8_t ascii)
     }
   }
   return mask;
+}
+
+
+uint8_t gbj_tm1638::processKeypad()
+{
+  uint8_t buffer[BYTES_SCAN];
+  uint8_t keyMask = 0x00;
+  // Read keys
+  if (busReceive(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_READ, buffer)) return getLastResult();
+  for (uint8_t i = 0; i < sizeof(buffer) / sizeof(buffer[0]); i++) keyMask |= buffer[i] << i;
+  // Process keys
+  for (uint8_t key = 0; key < KEYS; key++)
+  {
+    uint8_t keyState = keyMask & (0x01 << key);
+    // Shift key states to the past
+    for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
+    {
+      _keys[key].keyState[i] = _keys[key].keyState[i - 1];
+    }
+    // Determine current key state
+    if (keyState)  // Key pressed
+    {
+      _keys[key].releaseScans = 0;
+      if (_keys[key].pressScans < 255) _keys[key].pressScans++;
+      if (_keys[key].pressScans > 0) _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_SHORT;
+      if (_keys[key].pressScans > 5) _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_LONG;
+    }
+    else  // Key released
+    {
+      _keys[key].pressScans = 0;
+      if (_keys[key].releaseScans < 255) _keys[key].releaseScans++;
+      if (_keys[key].releaseScans > 0) _keys[key].keyState[0] = GBJ_TM1638_KEY_RELEASE_SHORT;
+      if (_keys[key].releaseScans > 5) _keys[key].keyState[0] = GBJ_TM1638_KEY_RELEASE_LONG;
+    }
+    // Determine derived key state by key series pattern
+    if (
+       _keys[key].keyState[3] == GBJ_TM1638_KEY_RELEASE_LONG
+    && _keys[key].keyState[2] == GBJ_TM1638_KEY_PRESS_SHORT
+    && _keys[key].keyState[1] == GBJ_TM1638_KEY_RELEASE_SHORT
+    && _keys[key].keyState[0] == GBJ_TM1638_KEY_PRESS_SHORT)
+    {
+      _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_DOUBLE;
+      Serial.println("Double");
+    }
+    if (
+       _keys[key].keyState[4] == GBJ_TM1638_KEY_RELEASE_LONG
+    && _keys[key].keyState[3] == GBJ_TM1638_KEY_PRESS_SHORT
+    && _keys[key].keyState[2] == GBJ_TM1638_KEY_RELEASE_SHORT
+    && _keys[key].keyState[1] == GBJ_TM1638_KEY_PRESS_SHORT
+    && _keys[key].keyState[0] == GBJ_TM1638_KEY_PRESS_LONG)
+    {
+      _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_DOUBLE_LONG;
+      Serial.println("DoubleLong");
+    }
+    // Calling handler if state has changed
+    if (_keys[key].keyState[0] != _keys[key].keyState[1] && _keyProcesing) _keyProcesing(key, _keys[key].keyState[0]);
+  }
+  return getLastResult();
 }
