@@ -49,6 +49,41 @@
 #define GBJ_TM1638_ERR_PINS   255
 #define GBJ_TM1638_ERR_ACK    254
 
+// Key actions types
+#define GBJ_TM1638_KEY_RELEASE_SHORT      0
+#define GBJ_TM1638_KEY_RELEASE_LONG       1
+#define GBJ_TM1638_KEY_PRESS_SHORT        2
+#define GBJ_TM1638_KEY_PRESS_LONG         3
+#define GBJ_TM1638_KEY_PRESS_DOUBLE       4
+#define GBJ_TM1638_KEY_PRESS_DOUBLE_LONG  5
+
+
+/*
+  Custom type for callback functions (handler) processing key actions
+
+  DESCRIPTION:
+  The method turns off all segments including for radixes of all digital tubes
+  and then sets the printing position for subsequent printing.
+
+  PARAMETERS:
+  key - Number of a keypap's key counting from 0, for which activity the handler
+        is called.
+        - Data type: non-negative integer
+        - Default value: 0
+        - Limited range: 0 ~ 7 (constructor's parameter keys - 1)
+
+  stateCurr - The current state of a key.
+        - Data type: non-negative integer
+        - Default value: 0
+        - Limited range: 0 ~ 255
+
+  statePrev - The previous state of a key.
+        - Data type: non-negative integer
+        - Default value: 0
+        - Limited range: 0 ~ 255
+  RETURN: none
+*/
+typedef void (*gbj_tm1638_handler)(uint8_t key, uint8_t state);
 
 class gbj_tm1638 : public Print
 {
@@ -99,11 +134,18 @@ public:
          - Default value: 8
          - Limited range: 0 ~ 8 (by microcontroller datasheet)
 
+  keys - Number of keys that should be controlled. Usually it is the
+        number of present kyes in a keypad of a display module. The controller
+        supports up to 24 key, but a display module usually just 8 ones.
+        - Data type: non-negative integer
+        - Default value: 8
+        - Limited range: 0 ~ 8 (by microcontroller datasheet up to 24)
+
   RETURN:
   Result code.
 */
 gbj_tm1638(uint8_t pinClk = 2, uint8_t pinDio = 3, uint8_t pinStb = 4, \
-  uint8_t digits = DIGITS, uint8_t leds = LEDS);
+  uint8_t digits = DIGITS, uint8_t leds = LEDS, uint8_t keys = KEYS);
 
 
 /*
@@ -172,6 +214,25 @@ uint8_t displayOff();
   RETURN: none
 */
 inline void displayClear(uint8_t digit = 0) { printDigitOffAll(); printRadixOffAll(); placePrint(digit); }
+
+
+/*
+  Clear entire display module including all digital tubes and LEDs
+
+  DESCRIPTION:
+  The method turns off all segments including for radixes of all digital tubes
+  as well as all LEDs and then sets the printing position for subsequent printing.
+
+  PARAMETERS:
+  digit - Number of digital tube counting from 0 where the printing should start
+          after module clearing.
+          - Data type: non-negative integer
+          - Default value: 0
+          - Limited range: 0 ~ 7 (constructor's parameter digits - 1)
+
+  RETURN: none
+*/
+inline void moduleClear(uint8_t digit = 0) { printLedAllOff(); displayClear(digit); }
 
 
 /*
@@ -382,6 +443,8 @@ inline void printLedGreenToggleAll() { for (uint8_t led = 0; led < _status.leds;
 inline void printLedAllOn() { printLedRedOnAll(); printLedGreenOnAll(); }
 inline void printLedAllOff() { printLedRedOffAll(); printLedGreenOffAll(); }
 
+void registerHandler(gbj_tm1638_handler handler);
+void run();
 
 //------------------------------------------------------------------------------
 // Public setters - they usually return result code.
@@ -480,10 +543,14 @@ enum Geometry // Controller TM1638
 {
   DIGITS = 8, // Maximal allowed digital tubes
   LEDS = 8, // Maximal allowed two-color LEDs
+  KEYS = 8, // Maximal allowed keys in the keypad
+  BYTES_ADDR = 16, // By datasheet maximal addressable register position
+  BYTES_SCAN = 4, // By datasheet maximal key press detection bytes
 };
 enum Timing
 {
   TIMING_RELAX = 2, // MCU relaxing delay in microseconds after pin change
+  TIMING_SCAN = 100, // Keypad scanning interval in milliseconds
 };
 enum Rasters
 {
@@ -504,8 +571,7 @@ enum LEDs
 //------------------------------------------------------------------------------
 struct
 {
-  uint8_t buffer[DIGITS + LEDS];  // Screen buffer
-  // uint8_t width;  // Number of grids for printing characters
+  uint8_t buffer[BYTES_ADDR];  // Screen buffer
   uint8_t digit; // Current digit for next printing
 } _print; // Display hardware parameters for printing
 struct Bitmap
@@ -522,9 +588,19 @@ struct
   uint8_t pinStb; // Number of strobe pin
   uint8_t digits; // Amount of controlled digital tubes
   uint8_t leds; // Amount of controlled LEDs
+  uint8_t keys; // Amount of controlled keys
   uint8_t contrast; // Current contrast level
+  uint32_t scanTimestamp; // Recent keypad scanning time
 } _status;  // Microcontroller status features
+struct
+{
+  uint8_t pressScans;  // Number of continuous scanning at pressed key
+  uint8_t releaseScans;  // Number of continuous scanning at released key
+  uint8_t keyState[5]; // Key state series
+} _keys[KEYS]; // Display module key records list
 
+// Pointers to global (default) alarm handlers
+gbj_tm1638_handler _keyProcesing;
 
 //------------------------------------------------------------------------------
 // Private methods
@@ -534,14 +610,17 @@ inline uint8_t addrGrid(uint8_t digit) { return 2 * digit; }
 inline uint8_t addrLed(uint8_t led) { return 2 * led + 1; }
 inline uint8_t setLastCommand(uint8_t lastCommand) { return _status.lastCommand = lastCommand; }
 void waitPulseClk();  // Delay for clock pulse duration
+void gridWrite(uint8_t segmentMask = 0x00, uint8_t gridStart = 0, uint8_t gridStop = DIGITS); // Fill screen buffer with digit masks
 void beginTransmission(); // Start condition
 void endTransmission(); // Stop condition
 void busWrite(uint8_t data);  // Write byte to the bus
-void gridWrite(uint8_t segmentMask = 0x00, uint8_t gridStart = 0, uint8_t gridStop = DIGITS); // Fill screen buffer with digit masks
+uint8_t busRead();  // Read byte from the bus
+uint8_t busReceive(uint8_t command, uint8_t* buffer);
 uint8_t busSend(uint8_t command); // Send sole command
 uint8_t busSend(uint8_t command, uint8_t data); // Send data at fixed address
 uint8_t busSend(uint8_t command, uint8_t* buffer, uint8_t bufferBytes); // Send data at auto-increment addressing
 uint8_t getFontMask(uint8_t ascii); // Lookup font mask in font table by ASCII code
+uint8_t processKeypad(); // Process keypad scanning
 };
 
 #endif
