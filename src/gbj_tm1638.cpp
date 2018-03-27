@@ -272,49 +272,74 @@ uint8_t gbj_tm1638::processKeypad()
   // Process keys
   for (uint8_t key = 0; key < KEYS; key++)
   {
-    uint8_t keyState = keyMask & (0x01 << key);
-    // Shift key states to the past
-    for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
-    {
-      _keys[key].keyState[i] = _keys[key].keyState[i - 1];
-    }
+    bool keyPressed = keyMask & (0x01 << key);
+    uint8_t keyState;
     // Determine current key state
-    if (keyState)  // Key pressed
+    if (keyPressed)
     {
-      _keys[key].releaseScans = 0;
+      _keys[key].waitScans = 0;
+      keyState = KEY_PRESS_SHORT;
       if (_keys[key].pressScans < 255) _keys[key].pressScans++;
-      if (_keys[key].pressScans > 0) _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_SHORT;
-      if (_keys[key].pressScans > 5) _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_LONG;
+      if (_keys[key].pressScans >= TIMING_SCAN_PRESS_TRESHOLD) keyState = KEY_PRESS_LONG;
     }
-    else  // Key released
+    else
     {
       _keys[key].pressScans = 0;
-      if (_keys[key].releaseScans < 255) _keys[key].releaseScans++;
-      if (_keys[key].releaseScans > 0) _keys[key].keyState[0] = GBJ_TM1638_KEY_RELEASE_SHORT;
-      if (_keys[key].releaseScans > 5) _keys[key].keyState[0] = GBJ_TM1638_KEY_RELEASE_LONG;
+      keyState = KEY_WAIT_SHORT;
+      if (_keys[key].waitScans < 255) _keys[key].waitScans++;
+      if (_keys[key].waitScans >= TIMING_SCAN_WAIT_TRESHOLD) keyState = KEY_WAIT_LONG;
     }
-    // Determine derived key state by key series pattern
-    if (
-       _keys[key].keyState[3] == GBJ_TM1638_KEY_RELEASE_LONG
-    && _keys[key].keyState[2] == GBJ_TM1638_KEY_PRESS_SHORT
-    && _keys[key].keyState[1] == GBJ_TM1638_KEY_RELEASE_SHORT
-    && _keys[key].keyState[0] == GBJ_TM1638_KEY_PRESS_SHORT)
+    // Process action if state has changed
+    if (_keys[key].keyState[0] != keyState)
     {
-      _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_DOUBLE;
-      Serial.println("Double");
+      // Historize key states
+      for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
+      {
+        _keys[key].keyState[i] = _keys[key].keyState[i - 1];
+      }
+      _keys[key].keyState[0] = keyState;
+      // Determine action type from key state pattern
+      uint8_t keyAction = 0;
+      if (
+         _keys[key].keyState[0] == KEY_WAIT_SHORT
+      && _keys[key].keyState[1] == KEY_PRESS_SHORT
+      && _keys[key].keyState[2] == KEY_WAIT_SHORT
+      && _keys[key].keyState[3] == KEY_PRESS_SHORT
+      && _keys[key].keyState[4] == KEY_WAIT_LONG
+      )
+      {
+        keyAction = GBJ_TM1638_KEY_CLICK_DOUBLE;
+      }
+      if (
+         _keys[key].keyState[0] == KEY_WAIT_LONG
+      && _keys[key].keyState[1] == KEY_WAIT_SHORT
+      && _keys[key].keyState[2] == KEY_PRESS_SHORT
+      && _keys[key].keyState[3] == KEY_WAIT_LONG
+      )
+      {
+        keyAction = GBJ_TM1638_KEY_CLICK;
+      }
+      if (
+         _keys[key].keyState[0] == KEY_PRESS_LONG
+      && _keys[key].keyState[1] == KEY_PRESS_SHORT
+      && _keys[key].keyState[2] == KEY_WAIT_SHORT
+      && _keys[key].keyState[3] == KEY_PRESS_SHORT
+      && _keys[key].keyState[4] == KEY_WAIT_LONG
+      )
+      {
+        keyAction = GBJ_TM1638_KEY_HOLD_DOUBLE;
+      }
+      if (
+         _keys[key].keyState[0] == KEY_PRESS_LONG
+      && _keys[key].keyState[1] == KEY_PRESS_SHORT
+      && _keys[key].keyState[2] == KEY_WAIT_LONG
+      )
+      {
+        keyAction = GBJ_TM1638_KEY_HOLD;
+      }
+      // Call key handler with key action
+      if (keyAction && _keyProcesing) _keyProcesing(key, keyAction);
     }
-    if (
-       _keys[key].keyState[4] == GBJ_TM1638_KEY_RELEASE_LONG
-    && _keys[key].keyState[3] == GBJ_TM1638_KEY_PRESS_SHORT
-    && _keys[key].keyState[2] == GBJ_TM1638_KEY_RELEASE_SHORT
-    && _keys[key].keyState[1] == GBJ_TM1638_KEY_PRESS_SHORT
-    && _keys[key].keyState[0] == GBJ_TM1638_KEY_PRESS_LONG)
-    {
-      _keys[key].keyState[0] = GBJ_TM1638_KEY_PRESS_DOUBLE_LONG;
-      Serial.println("DoubleLong");
-    }
-    // Calling handler if state has changed
-    if (_keys[key].keyState[0] != _keys[key].keyState[1] && _keyProcesing) _keyProcesing(key, _keys[key].keyState[0]);
   }
   return getLastResult();
 }
