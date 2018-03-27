@@ -49,13 +49,11 @@
 #define GBJ_TM1638_ERR_PINS   255
 #define GBJ_TM1638_ERR_ACK    254
 
-// Key actions types
-#define GBJ_TM1638_KEY_RELEASE_SHORT      0
-#define GBJ_TM1638_KEY_RELEASE_LONG       1
-#define GBJ_TM1638_KEY_PRESS_SHORT        2
-#define GBJ_TM1638_KEY_PRESS_LONG         3
-#define GBJ_TM1638_KEY_PRESS_DOUBLE       4
-#define GBJ_TM1638_KEY_PRESS_DOUBLE_LONG  5
+// Key action types (0 is prohibited - will be ignored)
+#define GBJ_TM1638_KEY_CLICK        1
+#define GBJ_TM1638_KEY_CLICK_DOUBLE 2
+#define GBJ_TM1638_KEY_HOLD         3
+#define GBJ_TM1638_KEY_HOLD_DOUBLE  4
 
 
 /*
@@ -72,18 +70,14 @@
         - Default value: 0
         - Limited range: 0 ~ 7 (constructor's parameter keys - 1)
 
-  stateCurr - The current state of a key.
+  action - The action with a key, which has been executed recently.
         - Data type: non-negative integer
         - Default value: 0
         - Limited range: 0 ~ 255
 
-  statePrev - The previous state of a key.
-        - Data type: non-negative integer
-        - Default value: 0
-        - Limited range: 0 ~ 255
   RETURN: none
 */
-typedef void (*gbj_tm1638_handler)(uint8_t key, uint8_t state);
+typedef void (*gbj_tm1638_handler)(uint8_t key, uint8_t action);
 
 class gbj_tm1638 : public Print
 {
@@ -551,6 +545,8 @@ enum Timing
 {
   TIMING_RELAX = 2, // MCU relaxing delay in microseconds after pin change
   TIMING_SCAN = 100, // Keypad scanning interval in milliseconds
+  TIMING_SCAN_WAIT_TRESHOLD = 2, // Number of scans for long key release duration
+  TIMING_SCAN_PRESS_TRESHOLD = 4, // Number of scans for long key press duration
 };
 enum Rasters
 {
@@ -564,7 +560,13 @@ enum LEDs
   LED_RED = 0x01, // Control bit for red led
   LED_GREEN = 0x02, // Control bit for green led
 };
-
+enum KEYs
+{
+  KEY_WAIT_SHORT  = 0,
+  KEY_WAIT_LONG   = 1,
+  KEY_PRESS_SHORT = 2,
+  KEY_PRESS_LONG  = 3,
+};
 
 //------------------------------------------------------------------------------
 // Private attributes
@@ -595,7 +597,7 @@ struct
 struct
 {
   uint8_t pressScans;  // Number of continuous scanning at pressed key
-  uint8_t releaseScans;  // Number of continuous scanning at released key
+  uint8_t waitScans;  // Number of continuous scanning at released key
   uint8_t keyState[5]; // Key state series
 } _keys[KEYS]; // Display module key records list
 
