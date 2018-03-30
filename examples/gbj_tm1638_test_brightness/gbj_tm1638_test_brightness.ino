@@ -1,7 +1,6 @@
 /*
   NAME:
-  Brigthness test of a display module with TM1638 controller and 7-segment
-  digital tubes
+  Brigthness test of a display module with TM1638 controller
 
   DESCRIPTION:
   The sketch turns on all glyph segments of all digital tubes and changes their
@@ -63,7 +62,7 @@ void setup()
     errorHandler();
     return;
   }
-  Sled.printDigitOnAll();
+  Sled.printDigitOn();
 }
 
 
@@ -73,8 +72,8 @@ void loop()
   // Test all contrast levels
   for (unsigned char contrast = 0; contrast < 8; contrast++)
   {
-    Sled.printLedRedOffAll();
-    Sled.printLedRedOn(contrast);
+    Sled.printLedOff();
+    Sled.printLedOnRed(contrast);
     Sled.setContrast(contrast);
     displayTest();
   }

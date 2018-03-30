@@ -1,7 +1,6 @@
 /*
   NAME:
   Digit segments functionality test for a display module with TM1638 controller
-  and 7-segment digital tubes
 
   DESCRIPTION:
   The sketch tests all 7 segments of each digital tube displaying them one by one
@@ -68,9 +67,9 @@ void setup()
 void loop()
 {
   if (Sled.isError()) return;
-  Sled.printDigitOffAll();
+  Sled.printDigitOff();
   // Test all digits one by one
-  for (unsigned char digit = 0; digit < Sled.getGrids(); digit++)
+  for (unsigned char digit = 0; digit < Sled.getDigits(); digit++)
   {
     // Display segments one by one of a digit
     for (unsigned char segment = 0; segment < 7; segment++)

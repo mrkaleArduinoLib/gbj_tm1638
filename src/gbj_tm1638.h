@@ -207,7 +207,7 @@ uint8_t displayOff();
 
   RETURN: none
 */
-inline void displayClear(uint8_t digit = 0) { printDigitOffAll(); printRadixOffAll(); placePrint(digit); }
+inline void displayClear(uint8_t digit = 0) { printDigitOff(); printRadixOff(); placePrint(digit); }
 
 
 /*
@@ -226,7 +226,7 @@ inline void displayClear(uint8_t digit = 0) { printDigitOffAll(); printRadixOffA
 
   RETURN: none
 */
-inline void moduleClear(uint8_t digit = 0) { printLedAllOff(); displayClear(digit); }
+inline void moduleClear(uint8_t digit = 0) { printLedOff(); displayClear(digit); }
 
 
 /*
@@ -241,17 +241,17 @@ inline void moduleClear(uint8_t digit = 0) { printLedAllOff(); displayClear(digi
   digit - Driver's digit tube number counting from 0, which radix segment
          should be manipulated.
          - Data type: non-negative integer
-         - Default value: 0
+         - Default value: none
          - Limited range: 0 ~ 7
 
   RETURN: none
 */
-inline void printRadixOn(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] |= 0x80; }
-inline void printRadixOff(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] &= ~0x80; }
-inline void printRadixToggle(uint8_t digit = 0) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] ^= 0x80; }
-inline void printRadixOnAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOn(digit); }
-inline void printRadixOffAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOff(digit); }
-inline void printRadixToggleAll() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixToggle(digit); }
+inline void printRadixOn(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] |= 0x80; }
+inline void printRadixOn() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOn(digit); }
+inline void printRadixOff(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] &= ~0x80; }
+inline void printRadixOff() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOff(digit); }
+inline void printRadixToggle(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] ^= 0x80; }
+inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixToggle(digit); }
 
 
 /*
@@ -265,24 +265,24 @@ inline void printRadixToggleAll() { for (uint8_t digit = 0; digit < _status.digi
   digit - Driver's digit (digital tube) number counting from 0, which glyph
          segments should be manipulated.
          - Data type: non-negative integer
-         - Default value: 0
+         - Default value: none or 0
          - Limited range: 0 ~ 7
 
   segmentMask - Bit mask defining what segments should be turned on. Segments
                 are marked starting from A to G and relate to mask bits 0 to 6
                 counting from least significant bit. The 7th bit relates to radix
                 segment and therefore it is ignored.
-               - Data type: non-negative integer
-               - Default value: 0xFF (all glyph segments turned on)
-               - Limited range: 0 ~ 127
+                - Data type: non-negative integer
+                - Default value: 0xFF (all glyph segments turned on)
+                - Limited range: 0 ~ 127
 
   RETURN: none
 */
 inline void printDigit(uint8_t digit = 0, uint8_t segmentMask = 0x7F) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
-inline void printDigitOn(uint8_t digit = 0) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
-inline void printDigitOff(uint8_t digit = 0) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
-inline void printDigitOnAll() { gridWrite(0x7F); }
-inline void printDigitOffAll() { gridWrite(0x00); }
+inline void printDigitOn(uint8_t digit) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
+inline void printDigitOn() { gridWrite(0x7F); }
+inline void printDigitOff(uint8_t digit) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
+inline void printDigitOff() { gridWrite(0x00); }
 
 
 /*
@@ -373,72 +373,68 @@ size_t write(const uint8_t* buffer, size_t size);
 
 
 /*
-  Manipulate red LEDs of a display module
+  Manipulate LEDs of a display module
 
   DESCRIPTION:
-  The particular method performs corresponding manipulation with red LEDs without
-  influence on green LEDs and digital tubes in the screen buffer.
-
-  PARAMETERS:
-  led - Driver's red LED number counting from 0.
-        - Data type: non-negative integer
-        - Default value: 0
-        - Limited range: 0 ~ 7
-
-  RETURN: none
-*/
-inline void printLedRedOn(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] |= LED_RED; }
-inline void printLedRedOff(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_RED; }
-inline void printLedRedToggle(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] ^= LED_RED; }
-inline void printLedRedOnAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedOn(led); }
-inline void printLedRedOffAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedOff(led); }
-inline void printLedRedToggleAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedRedToggle(led); }
-
-
-/*
-  Manipulate green LEDs of the display module
-
-  DESCRIPTION:
-  The particular method performs corresponding manipulation with green LEDs
-  without influence on red LEDs and digital tubes in the screen buffer.
-  - Some display modules does not have green LEDs present.
-
-  PARAMETERS:
-  led - Driver's green LED number counting from 0.
-        - Data type: non-negative integer
-        - Default value: 0
-        - Limited range: 0 ~ 7
-
-  RETURN: none
-*/
-inline void printLedGreenOn(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] |= LED_GREEN; }
-inline void printLedGreenOff(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_GREEN; }
-inline void printLedGreenToggle(uint8_t led = 0) { if (led < _status.leds) _print.buffer[addrLed(led)] ^= LED_GREEN; }
-inline void printLedGreenOnAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenOn(led); }
-inline void printLedGreenOffAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenOff(led); }
-inline void printLedGreenToggleAll() { for (uint8_t led = 0; led < _status.leds; led++) printLedGreenToggle(led); }
-
-
-/*
-  Manipulate all LEDs of the display module at once
-
-  DESCRIPTION:
-  The particular method performs corresponding manipulation with all LEDs
-  without influence digital tubes in the screen buffer.
+  The particular method performs corresponding manipulation with corresponding LEDs without
+  influence on digital tubes in the screen buffer.
+  - If there is no input LED number provided, the methods manipulates all LEDs of a module at once.
+  - The "Swap" means changing colors of a LED between red and green.
 
   PARAMETERS:
   led - Driver's LED number counting from 0.
         - Data type: non-negative integer
-        - Default value: 0
+        - Default value: none
         - Limited range: 0 ~ 7
 
   RETURN: none
 */
-inline void printLedAllOn() { printLedRedOnAll(); printLedGreenOnAll(); }
-inline void printLedAllOff() { printLedRedOffAll(); printLedGreenOffAll(); }
+inline void printLedOnRed(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_RED; }
+inline void printLedOnRed() { for (uint8_t led = 0; led < _status.leds; led++) printLedOnRed(led); }
+inline void printLedToggleRed(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_GREEN; _print.buffer[addrLed(led)] ^= LED_RED; }
+inline void printLedToggleRed() { for (uint8_t led = 0; led < _status.leds; led++) printLedToggleRed(led); }
+//
+inline void printLedOnGreen(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_GREEN; }
+inline void printLedOnGreen() { for (uint8_t led = 0; led < _status.leds; led++) printLedOnGreen(led); }
+inline void printLedToggleGreen(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_RED; _print.buffer[addrLed(led)] ^= LED_GREEN; }
+inline void printLedToggleGreen() { for (uint8_t led = 0; led < _status.leds; led++) printLedToggleGreen(led); }
+//
+inline void printLedOff(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_OFF; }
+inline void printLedOff() { for (uint8_t led = 0; led < _status.leds; led++) printLedOff(led); }
+inline void printLedSwap(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = ~_print.buffer[addrLed(led)]; }
+inline void printLedSwap() { for (uint8_t led = 0; led < _status.leds; led++) printLedSwap(led); }
 
+
+/*
+  Register handler procedure for key action processing
+
+  DESCRIPTION:
+  The method registers a procedure, which is called when particular action with a key of module's keypad is performed.
+
+  PARAMETERS:
+  handler -Pointer to a handler procedure.
+           - Data type: gbj_tm1638_handler
+           - Default value: none
+           - Limited range: microcontroller addressing range
+
+  RETURN: none
+*/
 void registerHandler(gbj_tm1638_handler handler);
+
+
+/*
+  Evaluate timing and process keys of a module's keypad
+
+  DESCRIPTION:
+  The method processes timing and catches keypad's keys presses and calls a handler if particular action is detected.
+  - The method should be call very often. The best place is in the loop() function of a sketch, which is without delay() function.
+
+  PARAMETERS: none
+
+  RETURN: none
+*/
 void run();
+
 
 //------------------------------------------------------------------------------
 // Public setters - they usually return result code.
@@ -545,8 +541,8 @@ enum Timing
 {
   TIMING_RELAX = 2, // MCU relaxing delay in microseconds after pin change
   TIMING_SCAN = 100, // Keypad scanning interval in milliseconds
-  TIMING_SCAN_WAIT_TRESHOLD = 2, // Number of scans for long key release duration
-  TIMING_SCAN_PRESS_TRESHOLD = 4, // Number of scans for long key press duration
+  TIMING_SCAN_TRESHOLD_WAIT = 2, // Number of scans for long key release duration
+  TIMING_SCAN_TRESHOLD_PRESS_LONG = 4, // Number of scans for long key press duration
 };
 enum Rasters
 {
@@ -557,6 +553,7 @@ enum Rasters
 };
 enum LEDs
 {
+  LED_OFF = 0x00, // Control bit for leds turned off
   LED_RED = 0x01, // Control bit for red led
   LED_GREEN = 0x02, // Control bit for green led
 };

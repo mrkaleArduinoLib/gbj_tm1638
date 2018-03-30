@@ -280,14 +280,14 @@ uint8_t gbj_tm1638::processKeypad()
       _keys[key].waitScans = 0;
       keyState = KEY_PRESS_SHORT;
       if (_keys[key].pressScans < 255) _keys[key].pressScans++;
-      if (_keys[key].pressScans >= TIMING_SCAN_PRESS_TRESHOLD) keyState = KEY_PRESS_LONG;
+      if (_keys[key].pressScans >= TIMING_SCAN_TRESHOLD_PRESS_LONG) keyState = KEY_PRESS_LONG;
     }
     else
     {
       _keys[key].pressScans = 0;
       keyState = KEY_WAIT_SHORT;
       if (_keys[key].waitScans < 255) _keys[key].waitScans++;
-      if (_keys[key].waitScans >= TIMING_SCAN_WAIT_TRESHOLD) keyState = KEY_WAIT_LONG;
+      if (_keys[key].waitScans >= TIMING_SCAN_TRESHOLD_WAIT) keyState = KEY_WAIT_LONG;
     }
     // Process action if state has changed
     if (_keys[key].keyState[0] != keyState)

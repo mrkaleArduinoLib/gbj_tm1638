@@ -10,7 +10,7 @@
     - TM1638 pin STB to Arduino pin D4
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
-  - The sketch is configured to work with all 8 LEDs with common cathode.
+  - The sketch is configured to work with all 8 red LEDs with common cathode.
 
   LICENSE:
   This program is free software; you can redistribute it and/or modify
@@ -67,26 +67,26 @@ void loop()
   // Display LEDs one by one
   for (unsigned char led = 0; led < Sled.getLeds(); led++)
   {
-    Sled.printLedRedOn(led);
+    Sled.printLedOnRed(led);
     displayTest();
-    Sled.printLedRedOff(led);
+    Sled.printLedOff(led);
   }
   for (signed char led = Sled.getLeds() - 2; led >= 0; led--)
   {
-    Sled.printLedRedOn(led);
+    Sled.printLedOnRed(led);
     displayTest();
-    Sled.printLedRedOff(led);
+    Sled.printLedOff(led);
   }
   displayTest();
   // Display LEDs as thermometer
   for (unsigned char led = 0; led < Sled.getLeds(); led++)
   {
-    Sled.printLedRedOn(led);
+    Sled.printLedOnRed(led);
     displayTest();
   }
   for (signed char led = Sled.getLeds() - 1; led >=0; led--)
   {
-    Sled.printLedRedOff(led);
+    Sled.printLedOff(led);
     displayTest();
   }
 }

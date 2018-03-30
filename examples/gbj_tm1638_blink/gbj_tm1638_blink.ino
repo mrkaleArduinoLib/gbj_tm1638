@@ -1,20 +1,22 @@
 /*
   NAME:
-  Demo sketch for blinking all digital tubes of a display module with TM1638
-  controller
+  Demo sketch for blinking all digital tubes and red LEDs of a display module
+  with TM1638 controller.
 
   DESCRIPTION:
-  The sketch turns on all 7 glyph segments of each digital tube and blink them
-  at once while the active radix segment at particular tube signals the contrast
-  (brightness level).
+  The sketch turns on all 7 glyph segments of each digital tube including all
+  red LEDs and blink them at once while the active radix segment at particular
+  tube signals the contrast (brightness level).
   - Connect controller's pins to Arduino's pins as follows:
     - TM1638 pin CLK to Arduino pin D2
     - TM1638 pin DIO to Arduino pin D3
     - TM1638 pin STB to Arduino pin D4
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
-  - The sketch is configured to work with all 8 digital tubes and all 8 LEDs
+  - The sketch is configured to work with all 8 digital tubes and all 8 red LEDs
     with common cathode.
+  - Because not all display modules are equipped with two-color LEDs, the green
+    LEDs are not used in the sketch.
   - The digital tubes and LEDs are blinked several times (default 3) before
     changing contrast to the next level.
   - The sketch signals a contrast level by corresponding radix activated.
@@ -68,8 +70,8 @@ void setup()
     return;
   }
   // Setup for test
-  Sled.printDigitOnAll();
-  Sled.printLedAllOn();
+  Sled.printDigitOn();
+  Sled.printLedOnRed();
   Sled.displayOff();
 }
 
@@ -80,7 +82,7 @@ void loop()
   // Cycle contrast
   for (unsigned char contrast = 0; contrast < 8; contrast++)
   {
-    Sled.printRadixOffAll();
+    Sled.printRadixOff();
     Sled.setContrast(contrast);
     Sled.printRadixOn(contrast);
     // Cycle blinks

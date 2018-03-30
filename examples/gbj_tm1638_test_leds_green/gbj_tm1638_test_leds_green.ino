@@ -1,17 +1,19 @@
 /*
   NAME:
-  Radix segments functionality test for a display module with TM1638
+  Green LEDs functionality test for a display module with TM1638 controller
 
   DESCRIPTION:
-  The sketch tests all radixes of a display module.
+  The sketch tests all red LEDs of a display module.
   - Connect controller's pins to Arduino's pins as follows:
     - TM1638 pin CLK to Arduino pin D2
     - TM1638 pin DIO to Arduino pin D3
     - TM1638 pin STB to Arduino pin D4
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
-  - The sketch is configured to work with all 8 digital tubes with common cathode.
-
+  - The sketch is configured to work with all 8 green LEDs with common cathode.
+  - Some display modules are not equipped with two-color LEDs, so that do not
+    use this sketch with modules just with red LEDs.
+  
   LICENSE:
   This program is free software; you can redistribute it and/or modify
   it under the terms of the MIT License (MIT).
@@ -20,7 +22,7 @@
   Author: Libor Gabaj
 */
 #include "gbj_tm1638.h"
-#define SKETCH "GBJ_TM1638_TEST_RADIXES 1.0.0"
+#define SKETCH "GBJ_TM1638_TEST_LEDS_RED 1.0.0"
 
 const unsigned int PERIOD_TEST = 500;  // Time in miliseconds between tests
 const unsigned char PIN_TM1638_CLK = 2;
@@ -64,29 +66,29 @@ void setup()
 void loop()
 {
   if (Sled.isError()) return;
-  // Display radixes one by one
-  for (unsigned char digit = 0; digit < Sled.getDigits(); digit++)
+  // Display LEDs one by one
+  for (unsigned char led = 0; led < Sled.getLeds(); led++)
   {
-    Sled.printRadixOn(digit);
+    Sled.printLedOnGreen(led);
     displayTest();
-    Sled.printRadixOff(digit);
+    Sled.printLedOff(led);
   }
-  for (signed char digit = Sled.getDigits() - 2; digit >= 0; digit--)
+  for (signed char led = Sled.getLeds() - 2; led >= 0; led--)
   {
-    Sled.printRadixOn(digit);
+    Sled.printLedOnGreen(led);
     displayTest();
-    Sled.printRadixOff(digit);
+    Sled.printLedOff(led);
   }
   displayTest();
-  // Display radixes as thermometer
-  for (unsigned char digit = 0; digit < Sled.getDigits(); digit++)
+  // Display LEDs as thermometer
+  for (unsigned char led = 0; led < Sled.getLeds(); led++)
   {
-    Sled.printRadixOn(digit);
+    Sled.printLedOnGreen(led);
     displayTest();
   }
-  for (signed char digit = Sled.getDigits() - 1; digit >=0; digit--)
+  for (signed char led = Sled.getLeds() - 1; led >=0; led--)
   {
-    Sled.printRadixOff(digit);
+    Sled.printLedOff(led);
     displayTest();
   }
 }

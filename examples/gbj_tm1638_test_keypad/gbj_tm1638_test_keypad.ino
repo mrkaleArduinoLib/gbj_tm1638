@@ -13,8 +13,8 @@
     - TM1638 pin GND to Arduino pin GND
   - The sketch is configured to work with all hardware elements, i.e., 8 digital
     tubes, 8 red LEDs, and 8 keys.
-  - By single clicking on a key, the sketch turns on corresponding LED.
-  - By double clicking on a key, the sketch turns off corresponding LED.
+  - By single clicking on a key, the sketch turns on corresponding red LED.
+  - By double clicking on a key, the sketch turns off corresponding red LED.
   - By single holding a key pressed, the sketch turns on corresponding tube.
   - By double holding a key pressed, the sketch turns of corresponding tube.
 
@@ -53,7 +53,7 @@ void keyHandler(uint8_t key, uint8_t action)
   if (action == GBJ_TM1638_KEY_CLICK)
   {
     Serial.println("GBJ_TM1638_KEY_CLICK");
-    Sled.printLedRedOn(key);
+    Sled.printLedOnRed(key);
   }
   if (action == GBJ_TM1638_KEY_HOLD)
   {
@@ -63,7 +63,7 @@ void keyHandler(uint8_t key, uint8_t action)
   if (action == GBJ_TM1638_KEY_CLICK_DOUBLE)
   {
     Serial.println("GBJ_TM1638_KEY_CLICK_DOUBLE");
-    Sled.printLedRedOff(key);
+    Sled.printLedOff(key);
   }
   if (action == GBJ_TM1638_KEY_HOLD_DOUBLE)
   {
