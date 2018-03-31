@@ -48,27 +48,30 @@ void errorHandler()
 
 void keyHandler(uint8_t key, uint8_t action)
 {
-  Serial.print("key: ");Serial.print(key);
-  Serial.print(" - ");
-  if (action == GBJ_TM1638_KEY_CLICK)
+  Serial.print("key S");
+  Serial.print(key + 1);
+  Serial.print(": ");
+  switch (action)
   {
-    Serial.println("GBJ_TM1638_KEY_CLICK");
-    Sled.printLedOnRed(key);
-  }
-  if (action == GBJ_TM1638_KEY_HOLD)
-  {
-    Serial.println("GBJ_TM1638_KEY_HOLD");
-    Sled.printDigitOn(key);
-  }
-  if (action == GBJ_TM1638_KEY_CLICK_DOUBLE)
-  {
-    Serial.println("GBJ_TM1638_KEY_CLICK_DOUBLE");
-    Sled.printLedOff(key);
-  }
-  if (action == GBJ_TM1638_KEY_HOLD_DOUBLE)
-  {
-    Serial.println("GBJ_TM1638_KEY_HOLD_DOUBLE");
-    Sled.printDigitOff(key);
+    case GBJ_TM1638_KEY_CLICK:
+      Serial.println("GBJ_TM1638_KEY_CLICK");
+      Sled.printLedOnRed(key);
+      break;
+
+    case GBJ_TM1638_KEY_HOLD:
+      Serial.println("GBJ_TM1638_KEY_HOLD");
+      Sled.printDigitOn(key);
+      break;
+
+    case GBJ_TM1638_KEY_CLICK_DOUBLE:
+      Serial.println("GBJ_TM1638_KEY_CLICK_DOUBLE");
+      Sled.printLedOff(key);
+      break;
+
+    case GBJ_TM1638_KEY_HOLD_DOUBLE:
+      Serial.println("GBJ_TM1638_KEY_HOLD_DOUBLE");
+      Sled.printDigitOff(key);
+      break;
   }
   if (Sled.display()) errorHandler();
 }

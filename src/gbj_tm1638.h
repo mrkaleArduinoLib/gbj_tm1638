@@ -79,6 +79,7 @@
 */
 typedef void (*gbj_tm1638_handler)(uint8_t key, uint8_t action);
 
+
 class gbj_tm1638 : public Print
 {
 public:
@@ -130,10 +131,10 @@ public:
 
   keys - Number of keys that should be controlled. Usually it is the
         number of present kyes in a keypad of a display module. The controller
-        supports up to 24 key, but a display module usually just 8 ones.
+        supports up to 24 key, but a display module usually just 8 ones does.
         - Data type: non-negative integer
         - Default value: 8
-        - Limited range: 0 ~ 8 (by microcontroller datasheet up to 24)
+        - Limited range: 0 ~ 24
 
   RETURN:
   Result code.
@@ -265,7 +266,7 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
   digit - Driver's digit (digital tube) number counting from 0, which glyph
          segments should be manipulated.
          - Data type: non-negative integer
-         - Default value: none or 0
+         - Default value: none
          - Limited range: 0 ~ 7
 
   segmentMask - Bit mask defining what segments should be turned on. Segments
@@ -273,12 +274,12 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
                 counting from least significant bit. The 7th bit relates to radix
                 segment and therefore it is ignored.
                 - Data type: non-negative integer
-                - Default value: 0xFF (all glyph segments turned on)
+                - Default value: none
                 - Limited range: 0 ~ 127
 
   RETURN: none
 */
-inline void printDigit(uint8_t digit = 0, uint8_t segmentMask = 0x7F) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
+inline void printDigit(uint8_t digit, uint8_t segmentMask) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
 inline void printDigitOn(uint8_t digit) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
 inline void printDigitOn() { gridWrite(0x7F); }
 inline void printDigitOff(uint8_t digit) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
@@ -531,9 +532,11 @@ enum Commands
 };
 enum Geometry // Controller TM1638
 {
-  DIGITS = 8, // Maximal allowed digital tubes
-  LEDS = 8, // Maximal allowed two-color LEDs
-  KEYS = 8, // Maximal allowed keys in the keypad
+  DIGITS = 8, // Usable and maximal implemented digital tubes
+  LEDS = 8, // Usable and maximal implemented two-color LEDs
+  KEYS = 8, // Maximal usable keys in the keypad
+  KEYS_MAX = 24, // Maximal implemented keys in the keypad
+  KEYS_BUSES = 3,  // Implemented key inputs (buses, key rows) in the keypad
   BYTES_ADDR = 16, // By datasheet maximal addressable register position
   BYTES_SCAN = 4, // By datasheet maximal key press detection bytes
 };
@@ -542,7 +545,7 @@ enum Timing
   TIMING_RELAX = 2, // MCU relaxing delay in microseconds after pin change
   TIMING_SCAN = 100, // Keypad scanning interval in milliseconds
   TIMING_SCAN_TRESHOLD_WAIT = 2, // Number of scans for long key release duration
-  TIMING_SCAN_TRESHOLD_PRESS_LONG = 4, // Number of scans for long key press duration
+  TIMING_SCAN_TRESHOLD_PRESS_LONG = 5, // Number of scans for long key press duration
 };
 enum Rasters
 {

@@ -9,7 +9,7 @@ gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
   _status.pinStb = pinStb;
   _status.digits = min(digits, DIGITS);
   _status.leds = min(leds, LEDS);
-  _status.keys = min(keys, KEYS);
+  _status.keys = min(keys, KEYS_MAX);
 }
 
 
@@ -262,17 +262,36 @@ uint8_t gbj_tm1638::getFontMask(uint8_t ascii)
 }
 
 
+// S1 - K3/KS1 - BYTE1
+// S2 - K3/KS3 - BYTE2
+// S3 - K3/KS5 - BYTE3
+// S4 - K3/KS7 - BYTE4
+// S5 - K3/KS2 - BYTE1
+// S6 - K3/KS4 - BYTE2
+// S7 - K3/KS6 - BYTE3
+// S8 - K3/KS8 - BYTE4
+
 uint8_t gbj_tm1638::processKeypad()
 {
   uint8_t buffer[BYTES_SCAN];
-  uint8_t keyMask = 0x00;
-  // Read keys
+  uint32_t keyMask = 0;
+  // Read all possible keys including not hardware implemented
   if (busReceive(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_READ, buffer)) return getLastResult();
-  for (uint8_t i = 0; i < sizeof(buffer) / sizeof(buffer[0]); i++) keyMask |= buffer[i] << i;
+  // Scan buses from K3 in descending order according to the datasheet
+  for (uint8_t bus = 0; bus < KEYS_BUSES; bus++)
+  {
+    uint8_t busMask = 0;
+    uint8_t bitMask = 0b10001 << bus; // Scanned keys for a bus
+    for (uint8_t scanByte = 0; scanByte < sizeof(buffer) / sizeof(buffer[0]); scanByte++)
+    {
+      busMask |= ((buffer[scanByte] & bitMask) >> bus) << scanByte; // Shift bus bit to first position
+    }
+    keyMask |= (busMask << bus * 8);  // Shift bus byte to its position in the double word
+  }
   // Process keys
   for (uint8_t key = 0; key < KEYS; key++)
   {
-    bool keyPressed = keyMask & (0x01 << key);
+    bool keyPressed = keyMask & (1 << key);
     uint8_t keyState;
     // Determine current key state
     if (keyPressed)
