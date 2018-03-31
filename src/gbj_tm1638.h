@@ -276,12 +276,12 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
                 counting from least significant bit. The 7th bit relates to radix
                 segment and therefore it is ignored.
                 - Data type: non-negative integer
-                - Default value: none
+                - Default value: 0x7F (all segments on)
                 - Limited range: 0 ~ 127
 
   RETURN: none
 */
-inline void printDigit(uint8_t digit, uint8_t segmentMask) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
+inline void printDigit(uint8_t digit, uint8_t segmentMask = 0x7F) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
 inline void printDigitOn(uint8_t digit) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
 inline void printDigitOn() { gridWrite(0x7F); }
 inline void printDigitOff(uint8_t digit) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
