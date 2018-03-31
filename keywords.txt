@@ -1,0 +1,59 @@
+#######################################
+# Syntax Coloring Map
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+gbj_tm1638	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+display	KEYWORD2
+displayClear	KEYWORD2
+displayOff	KEYWORD2
+displayOn	KEYWORD2
+getContrast	KEYWORD2
+getDigits	KEYWORD2
+getLastCommand	KEYWORD2
+getLastResult	KEYWORD2
+getLeds	KEYWORD2
+getPrint	KEYWORD2
+initLastResult	KEYWORD2
+isError	KEYWORD2
+isSuccess	KEYWORD2
+moduleClear	KEYWORD2
+placePrint	KEYWORD2
+printDigit	KEYWORD2
+printDigitOff	KEYWORD2
+printDigitOn	KEYWORD2
+printLedOff	KEYWORD2
+printLedOnGreen	KEYWORD2
+printLedOnRed	KEYWORD2
+printLedSwap	KEYWORD2
+printLedToggleGreen	KEYWORD2
+printLedToggleRed	KEYWORD2
+printRadixOff	KEYWORD2
+printRadixOn	KEYWORD2
+printRadixToggle	KEYWORD2
+printText	KEYWORD2
+registerHandler	KEYWORD2
+run	KEYWORD2
+setContrast	KEYWORD2
+setFont	KEYWORD2
+setLastResult	KEYWORD2
+write	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+GBJ_TM1638_VERSION	LITERAL1
+GBJ_TM1638_SUCCESS	LITERAL1
+GBJ_TM1638_ERR_PINS	LITERAL1
+GBJ_TM1638_ERR_ACK	LITERAL1
+GBJ_TM1638_KEY_CLICK	LITERAL1
+GBJ_TM1638_KEY_CLICK_DOUBLE	LITERAL1
+GBJ_TM1638_KEY_HOLD	LITERAL1
+GBJ_TM1638_KEY_HOLD_DOUBLE	LITERAL1

@@ -60,20 +60,22 @@
   Custom type for callback functions (handler) processing key actions
 
   DESCRIPTION:
-  The method turns off all segments including for radixes of all digital tubes
-  and then sets the printing position for subsequent printing.
+  The method is called then particular action with any key of the keypad is
+  detected. It allows to process and executed some code dedicated to particular
+  key and its action.
 
   PARAMETERS:
-  key - Number of a keypap's key counting from 0, for which activity the handler
+  key - Number of a keypad's key counting from 0, for which activity the handler
         is called.
         - Data type: non-negative integer
-        - Default value: 0
-        - Limited range: 0 ~ 7 (constructor's parameter keys - 1)
+        - Default value: none
+        - Limited range: 0 ~ 24
 
   action - The action with a key, which has been executed recently.
-        - Data type: non-negative integer
-        - Default value: 0
-        - Limited range: 0 ~ 255
+           - Data type: non-negative integer
+           - Default value: none
+           - Limited range: GBJ_TM1638_KEY_CLICK, GBJ_TM1638_KEY_CLICK_DOUBLE, 
+                            GBJ_TM1638_KEY_HOLD, GBJ_TM1638_KEY_HOLD_DOUBLE
 
   RETURN: none
 */
@@ -164,7 +166,7 @@ uint8_t begin();
 
   DESCRIPTION:
   The method transmits current content of the screen buffer to the driver, so that
-  it content is displayed immediatelly and stays unchanged until another transmission.
+  its content is displayed immediatelly and stays unchanged until another transmission.
   - The method utilizes automatic addressing mode of the driver.
 
   PARAMETERS: none
@@ -181,7 +183,7 @@ uint8_t display();
   DESCRIPTION:
   Particular method either turns on or off the entired display module including
   digital tubes and LEDs without changing current contrast level.
-  - Both methods are suitable for makin a display module blink.
+  - Both methods are suitable for making a display module blink.
 
   PARAMETERS: none
 
@@ -505,8 +507,8 @@ inline uint8_t getDigits() { return _status.digits; } // Digital tubes for displ
 inline uint8_t getLeds() { return _status.leds; } // LEDs for displaying
 inline uint8_t getContrast() { return _status.contrast; } // Current contrast
 inline uint8_t getPrint() { return _print.digit; } // Current digit position
-inline bool    isSuccess() { return _status.lastResult == GBJ_TM1638_SUCCESS; } // Flag about successful recent operation
-inline bool    isError() { return !isSuccess(); } // Flag about erroneous recent operation
+inline bool isSuccess() { return _status.lastResult == GBJ_TM1638_SUCCESS; } // Flag about successful recent operation
+inline bool isError() { return !isSuccess(); } // Flag about erroneous recent operation
 
 
 private:
