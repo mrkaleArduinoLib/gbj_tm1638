@@ -247,10 +247,10 @@ inline void moduleClear(uint8_t digit = 0) { printLedOff(); displayClear(digit);
 
   PARAMETERS:
   digit - Driver's digit tube number counting from 0, which radix segment
-         should be manipulated.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: 0 ~ 7
+          should be manipulated.
+          - Data type: non-negative integer
+          - Default value: none
+          - Limited range: 0 ~ 7
 
   RETURN: none
 */
@@ -271,10 +271,10 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
 
   PARAMETERS:
   digit - Driver's digit (digital tube) number counting from 0, which glyph
-         segments should be manipulated.
-         - Data type: non-negative integer
-         - Default value: none
-         - Limited range: 0 ~ 7
+          segments should be manipulated.
+          - Data type: non-negative integer
+          - Default value: none
+          - Limited range: 0 ~ 7
 
   segmentMask - Bit mask defining what segments should be turned on. Segments
                 are marked starting from A to G and relate to mask bits 0 to 6

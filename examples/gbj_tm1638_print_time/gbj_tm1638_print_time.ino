@@ -11,7 +11,7 @@
     - TM1638 pin Vcc to Arduino pin 5V
     - TM1638 pin GND to Arduino pin GND
   - The sketch is configured to work with all 8 digital tubes with common cathode.
-  - The sketch utilizes basic font and prints with system functions.
+  - The sketch utilizes basic font.
   - The sketch mimics displaying time in minutes and seconds.
 
   LICENSE:
