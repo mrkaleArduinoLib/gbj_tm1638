@@ -78,7 +78,7 @@ void loop()
       displayTest();
     }
     // Display all segments of a digit
-      Sled.printDigit(digit);
+      Sled.printDigitOn(digit);
       displayTest();
   }
   delay(PERIOD_TEST);

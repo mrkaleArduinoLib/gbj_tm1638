@@ -44,6 +44,7 @@ The font is an assignment of a glyph definition to particular ASCII code.
 ## Constants
 - **GBJ\_TM1638\_VERSION**: Name and semantic version of the library.
 - **GBJ\_TM1638\_SUCCESS**: Result code for successful processing.
+- **GBJ\_TM1638\_KEYS\_PRESENT**: Implemented keys in the keypad of a display module. Redefine it to according to your display module in order not to waist memory for not implemented but available keys. **Default is 8 keys.**
 ### Errors
 - **GBJ\_TM1638\_ERR\_PINS**: Error code for incorrectly assigned microcontroller's pins to controller's pins, usually some o them are duplicated.
 - **GBJ\_TM1638\_ERR\_ACK**: Error code for not acknowledged transmission by the driver.
@@ -109,7 +110,7 @@ Custom data type determining the template for key action handler procedures.
 
 #### Parameters
 - **key**: Number of a keypad's key counting from 0, for which action the handler is called.
-	- **Valid values**: 0 ~ 24
+	- **Valid values**: 0 ~ [GBJ\_TM1638\_KEYS\_PRESENT](#constants)
 	- **Default value**: none
 
 
@@ -159,7 +160,7 @@ The constructor method sanitizes and stores physical features of the display to 
 
 <a id="prm_keys"></a>
 - **keys**: Number of keypad's keys to be controlled. Default value is aimed for regular display modules.
-	- **Valid values**: 0 ~ 24
+	- **Valid values**: 0 ~ [GBJ\_TM1638\_KEYS\_PRESENT](#constants)
 	- **Default value**: 8
 
 #### Returns

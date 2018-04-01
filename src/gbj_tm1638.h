@@ -44,10 +44,15 @@
   #include <Particle.h>
 #endif
 
+// Hardware
+#ifndef GBJ_TM1638_KEYS_PRESENT
+#define GBJ_TM1638_KEYS_PRESENT     8 // Redefine it in a sketch for your module
+#endif
+
 // Result and error codes
-#define GBJ_TM1638_SUCCESS    0
-#define GBJ_TM1638_ERR_PINS   255
-#define GBJ_TM1638_ERR_ACK    254
+#define GBJ_TM1638_SUCCESS          0
+#define GBJ_TM1638_ERR_PINS         255
+#define GBJ_TM1638_ERR_ACK          254
 
 // Key action types (0 is prohibited - will be ignored)
 #define GBJ_TM1638_KEY_CLICK        1
@@ -136,7 +141,7 @@ public:
         supports up to 24 key, but a display module usually just 8 ones does.
         - Data type: non-negative integer
         - Default value: 8
-        - Limited range: 0 ~ 24
+        - Limited range: 0 ~ GBJ_TM1638_KEYS_PRESENT
 
   RETURN:
   Result code.
@@ -276,16 +281,17 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
                 counting from least significant bit. The 7th bit relates to radix
                 segment and therefore it is ignored.
                 - Data type: non-negative integer
-                - Default value: 0x7F (all segments on)
+                - Default value: none
                 - Limited range: 0 ~ 127
 
   RETURN: none
 */
-inline void printDigit(uint8_t digit, uint8_t segmentMask = 0x7F) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
-inline void printDigitOn(uint8_t digit) { if (digit < _status.digits) gridWrite(0x7F, digit, digit); }
-inline void printDigitOn() { gridWrite(0x7F); }
-inline void printDigitOff(uint8_t digit) { if (digit < _status.digits) gridWrite(0x00, digit, digit); }
-inline void printDigitOff() { gridWrite(0x00); }
+inline void printDigit(uint8_t digit, uint8_t segmentMask) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
+inline void printDigit(uint8_t segmentMask) { gridWrite(segmentMask); }
+inline void printDigitOn(uint8_t digit) { printDigit(digit, 0x7F); }
+inline void printDigitOn() { printDigit(0x7F); }
+inline void printDigitOff(uint8_t digit) { printDigit(digit, 0x00); }
+inline void printDigitOff() { printDigit(0x00); }
 
 
 /*
@@ -536,9 +542,7 @@ enum Geometry // Controller TM1638
 {
   DIGITS = 8, // Usable and maximal implemented digital tubes
   LEDS = 8, // Usable and maximal implemented two-color LEDs
-  KEYS = 8, // Maximal usable keys in the keypad
-  KEYS_MAX = 24, // Maximal implemented keys in the keypad
-  KEYS_BUSES = 3,  // Implemented key inputs (buses, key rows) in the keypad
+  KEYS = 8, // Default keys in the keypad
   BYTES_ADDR = 16, // By datasheet maximal addressable register position
   BYTES_SCAN = 4, // By datasheet maximal key press detection bytes
 };
@@ -600,8 +604,8 @@ struct
 {
   uint8_t pressScans;  // Number of continuous scanning at pressed key
   uint8_t waitScans;  // Number of continuous scanning at released key
-  uint8_t keyState[5]; // Key state series
-} _keys[KEYS]; // Display module key records list
+  uint8_t keyState[5]; // Key state history
+} _keys[GBJ_TM1638_KEYS_PRESENT]; // Display module key records list
 
 // Pointers to global (default) alarm handlers
 gbj_tm1638_handler _keyProcesing;

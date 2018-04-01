@@ -9,7 +9,7 @@ gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
   _status.pinStb = pinStb;
   _status.digits = min(digits, DIGITS);
   _status.leds = min(leds, LEDS);
-  _status.keys = min(keys, KEYS_MAX);
+  _status.keys = min(keys, GBJ_TM1638_KEYS_PRESENT);
 }
 
 
@@ -115,6 +115,7 @@ void gbj_tm1638::registerHandler(gbj_tm1638_handler handler)
 
 void gbj_tm1638::run()
 {
+  if (_status.keys == 0) return; // No key processing when no key is enabled
   uint32_t tsNow = millis();
   if (tsNow - _status.scanTimestamp >= TIMING_SCAN)
   {
@@ -261,103 +262,104 @@ uint8_t gbj_tm1638::getFontMask(uint8_t ascii)
   return mask;
 }
 
-
-// S1 - K3/KS1 - BYTE1
-// S2 - K3/KS3 - BYTE2
-// S3 - K3/KS5 - BYTE3
-// S4 - K3/KS7 - BYTE4
-// S5 - K3/KS2 - BYTE1
-// S6 - K3/KS4 - BYTE2
-// S7 - K3/KS6 - BYTE3
-// S8 - K3/KS8 - BYTE4
-
+/*
+    Mapping of hardware switches to controller's keys
+    S1 - K3/KS1 - BYTE1
+    S2 - K3/KS3 - BYTE2
+    S3 - K3/KS5 - BYTE3
+    S4 - K3/KS7 - BYTE4
+    S5 - K3/KS2 - BYTE1
+    S6 - K3/KS4 - BYTE2
+    S7 - K3/KS6 - BYTE3
+    S8 - K3/KS8 - BYTE4
+*/
 uint8_t gbj_tm1638::processKeypad()
 {
   uint8_t buffer[BYTES_SCAN];
-  uint32_t keyMask = 0;
   // Read all possible keys including not hardware implemented
   if (busReceive(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_READ, buffer)) return getLastResult();
   // Scan buses from K3 in descending order according to the datasheet
-  for (uint8_t bus = 0; bus < KEYS_BUSES; bus++)
+  for (uint8_t bus = 0; bus < _status.keys / 8 + 1; bus++)
   {
-    uint8_t busMask = 0;
+    uint8_t keyMask = 0;
     uint8_t bitMask = 0b10001 << bus; // Scanned keys for a bus
     for (uint8_t scanByte = 0; scanByte < sizeof(buffer) / sizeof(buffer[0]); scanByte++)
     {
-      busMask |= ((buffer[scanByte] & bitMask) >> bus) << scanByte; // Shift bus bit to first position
+      keyMask |= ((buffer[scanByte] & bitMask) >> bus) << scanByte; // Shift bus bit to first position
     }
-    keyMask |= (busMask << bus * 8);  // Shift bus byte to its position in the double word
-  }
-  // Process keys
-  for (uint8_t key = 0; key < KEYS; key++)
-  {
-    bool keyPressed = keyMask & (1 << key);
-    uint8_t keyState;
-    // Determine current key state
-    if (keyPressed)
+    // Process keys in a bus
+    for (uint8_t keyBit = 0; keyBit < 8; keyBit++)
     {
-      _keys[key].waitScans = 0;
-      keyState = KEY_PRESS_SHORT;
-      if (_keys[key].pressScans < 255) _keys[key].pressScans++;
-      if (_keys[key].pressScans >= TIMING_SCAN_TRESHOLD_PRESS_LONG) keyState = KEY_PRESS_LONG;
-    }
-    else
-    {
-      _keys[key].pressScans = 0;
-      keyState = KEY_WAIT_SHORT;
-      if (_keys[key].waitScans < 255) _keys[key].waitScans++;
-      if (_keys[key].waitScans >= TIMING_SCAN_TRESHOLD_WAIT) keyState = KEY_WAIT_LONG;
-    }
-    // Process action if state has changed
-    if (_keys[key].keyState[0] != keyState)
-    {
-      // Historize key states
-      for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
+      uint8_t key = keyBit + (8 * bus);
+      if (key >= _status.keys) break;
+      bool keyPressed = keyMask & (1 << keyBit);
+      uint8_t keyState;
+      // Determine current key state
+      if (keyPressed)
       {
-        _keys[key].keyState[i] = _keys[key].keyState[i - 1];
+        _keys[key].waitScans = 0;
+        keyState = KEY_PRESS_SHORT;
+        if (_keys[key].pressScans < 255) _keys[key].pressScans++;
+        if (_keys[key].pressScans >= TIMING_SCAN_TRESHOLD_PRESS_LONG) keyState = KEY_PRESS_LONG;
       }
-      _keys[key].keyState[0] = keyState;
-      // Determine action type from key state pattern
-      uint8_t keyAction = 0;
-      if (
-         _keys[key].keyState[0] == KEY_WAIT_SHORT
-      && _keys[key].keyState[1] == KEY_PRESS_SHORT
-      && _keys[key].keyState[2] == KEY_WAIT_SHORT
-      && _keys[key].keyState[3] == KEY_PRESS_SHORT
-      && _keys[key].keyState[4] == KEY_WAIT_LONG
-      )
+      else
       {
-        keyAction = GBJ_TM1638_KEY_CLICK_DOUBLE;
+        _keys[key].pressScans = 0;
+        keyState = KEY_WAIT_SHORT;
+        if (_keys[key].waitScans < 255) _keys[key].waitScans++;
+        if (_keys[key].waitScans >= TIMING_SCAN_TRESHOLD_WAIT) keyState = KEY_WAIT_LONG;
       }
-      if (
-         _keys[key].keyState[0] == KEY_WAIT_LONG
-      && _keys[key].keyState[1] == KEY_WAIT_SHORT
-      && _keys[key].keyState[2] == KEY_PRESS_SHORT
-      && _keys[key].keyState[3] == KEY_WAIT_LONG
-      )
+      // Process action if state has changed
+      if (_keys[key].keyState[0] != keyState)
       {
-        keyAction = GBJ_TM1638_KEY_CLICK;
+        // Historize key states
+        for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
+        {
+          _keys[key].keyState[i] = _keys[key].keyState[i - 1];
+        }
+        _keys[key].keyState[0] = keyState;
+        // Determine action type from key state pattern
+        uint8_t keyAction = 0;
+        if (
+           _keys[key].keyState[0] == KEY_WAIT_SHORT
+        && _keys[key].keyState[1] == KEY_PRESS_SHORT
+        && _keys[key].keyState[2] == KEY_WAIT_SHORT
+        && _keys[key].keyState[3] == KEY_PRESS_SHORT
+        && _keys[key].keyState[4] == KEY_WAIT_LONG
+        )
+        {
+          keyAction = GBJ_TM1638_KEY_CLICK_DOUBLE;
+        }
+        if (
+           _keys[key].keyState[0] == KEY_WAIT_LONG
+        && _keys[key].keyState[1] == KEY_WAIT_SHORT
+        && _keys[key].keyState[2] == KEY_PRESS_SHORT
+        && _keys[key].keyState[3] == KEY_WAIT_LONG
+        )
+        {
+          keyAction = GBJ_TM1638_KEY_CLICK;
+        }
+        if (
+           _keys[key].keyState[0] == KEY_PRESS_LONG
+        && _keys[key].keyState[1] == KEY_PRESS_SHORT
+        && _keys[key].keyState[2] == KEY_WAIT_SHORT
+        && _keys[key].keyState[3] == KEY_PRESS_SHORT
+        && _keys[key].keyState[4] == KEY_WAIT_LONG
+        )
+        {
+          keyAction = GBJ_TM1638_KEY_HOLD_DOUBLE;
+        }
+        if (
+           _keys[key].keyState[0] == KEY_PRESS_LONG
+        && _keys[key].keyState[1] == KEY_PRESS_SHORT
+        && _keys[key].keyState[2] == KEY_WAIT_LONG
+        )
+        {
+          keyAction = GBJ_TM1638_KEY_HOLD;
+        }
+        // Call key handler with key action
+        if (keyAction && _keyProcesing) _keyProcesing(key, keyAction);
       }
-      if (
-         _keys[key].keyState[0] == KEY_PRESS_LONG
-      && _keys[key].keyState[1] == KEY_PRESS_SHORT
-      && _keys[key].keyState[2] == KEY_WAIT_SHORT
-      && _keys[key].keyState[3] == KEY_PRESS_SHORT
-      && _keys[key].keyState[4] == KEY_WAIT_LONG
-      )
-      {
-        keyAction = GBJ_TM1638_KEY_HOLD_DOUBLE;
-      }
-      if (
-         _keys[key].keyState[0] == KEY_PRESS_LONG
-      && _keys[key].keyState[1] == KEY_PRESS_SHORT
-      && _keys[key].keyState[2] == KEY_WAIT_LONG
-      )
-      {
-        keyAction = GBJ_TM1638_KEY_HOLD;
-      }
-      // Call key handler with key action
-      if (keyAction && _keyProcesing) _keyProcesing(key, keyAction);
     }
   }
   return getLastResult();
