@@ -66,34 +66,48 @@ It is possible to use functions from the parent library [Print](#dependency), wh
 
 #### Initialization
 - [gbj_tm1638()](#gbj_tm1638)
-- **[begin()](#begin)**
+- [**begin()**](#begin)
 
 #### Display manipulation
-- **[display()](#display)**
-- **[displayOn()](#displaySwitch)**
-- **[displayOff()](#displaySwitch)**
+- [**display()**](#display)
+- [**displayOn()**](#displaySwitch)
+- [**displayOff()**](#displaySwitch)
 
 #### Screen buffer manipulation
+- [displayClear()](#displayClear)
+- [moduleClear()](#moduleClear)
 - [printRadixOn()](#printRadix)
 - [printRadixOff()](#printRadix)
 - [printRadixToggle()](#printRadix)
-- [printRadixClear()](#printRadixFull)
-- [printRadixFill()](#printRadixFull)
-- [printGrid()](#printGrid)
-- [printClear()](#printGridFull)
-- [printFill()](#printGridFull)
+- [printDigit()](#printDigit)
+- [printDigitOn()](#printDigitSwitch)
+- [printDigitOff()](#printDigitSwitch)
+- [printLedOnRed()](#printLed)
+- [printLedToggleRed()](#printLed)
+- [printLedOnGreen()](#printLed)
+- [printLedToggleGreen()](#printLed)
+- [printLedOff()](#printLedOff)
+- [printLedSwap()](#printLedSwap)
+- [printText()](#printText)
+- [placePrint()](#placePrint)
 - [write()](#write)
+- [registerHandler()](#registerHandler)
+- [run()](#run)
 
 #### Setters
 - [initLastResult()](#initLastResult)
 - [setLastResult()](#setLastResult)
-- **[setContrastControl()](#setContrastControl)**
+- [**setContrast()**](#setContrast)
 - [setFont()](#setFont)
 
 #### Getters
 - [getLastResult()](#getLastResult)
 - [getLastCommand()](#getLastCommand)
-- [getPrintWidth()](#getPrintWidth)
+- [getDigits()](#getGeometry)
+- [getLeds()](#getGeometry)
+- [getKeys()](#getGeometry)
+- [getContrast()](#getContrast)
+- [getPrint()](#getPrint)
 - [isSuccess()](#isSuccess)
 - [isError()](#isError)
 
@@ -147,7 +161,7 @@ The constructor method sanitizes and stores physical features of the display to 
 
 
 <a id="prm_digits"></a>
-- **digits**: Number of 7-segment LED digits to be controlled.
+- **digits**: Number of 7-segment digital tubes to be controlled.
 	- **Valid values**: 0 ~ 8
 	- **Default value**: 8
 
@@ -173,8 +187,9 @@ The library instance object for a display module.
 ## begin()
 #### Description
 The method sets the microcontroller's pins dedicated for the driver and performs initial sequence recommended by the data sheet for the controller.
-- It clears all digital tubes including radixes and turns off all leds.
-- It sets a display module to the normal operating mode.
+- The method clears all digital tubes including radixes and turns off all LEDs.
+- The method sets a display module to the normal operating mode.
+- The method checks whether some two pins set by constructor are not mutually equal.
 
 #### Syntax
 	uint8_t begin();
@@ -215,7 +230,7 @@ Some of [result or error codes](#constants).
 ## displayOn(), displayOff()
 #### Description
 Particular method either turns on or off the entired display module including digital tubes and LEDs without changing current contrast level.
-- Both methods are suitable for making a display module blink.
+- Both methods are suitable for making a display module blinking.
 
 #### Syntax
 	uint8_t displayOn();
@@ -233,108 +248,288 @@ Some of [result or error codes](#constants).
 [Back to interface](#interface)
 
 
+<a id="displayClear"></a>
+## displayClear()
+#### Description
+The method turns off all segments including for radixes of all digital tubes and then sets the printing position for subsequent printing.
+- It is a wrapper method for subsequent calling methods [printDigitOff()](#printDigitSwitch), [printRadixOff()](#printRadix), and [placePrint()](#placePrint).
+
+#### Syntax
+	void displayClear(uint8_t digit);
+
+#### Parameters
+- **digit**: Number of digital tube counting from 0 where the printing should start after display clearing.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: 0
+
+#### Returns
+None
+
+#### See also
+[printDigitOff()](#printDigitSwitch)
+
+[printRadixOff()](#printRadix)
+
+[placePrint()](#placePrint)
+
+[Back to interface](#interface)
+
+
+<a id="moduleClear"></a>
+## moduleClear()
+#### Description
+The method turns off all segments including for radixes of all digital tubes as well as all LEDs and then sets the printing position for subsequent printing.
+- It is a wrapper method for subsequent calling methods [printLedOff()](#printLedOff) and [displayClear()].
+
+#### Syntax
+	void moduleClear(uint8_t digit);
+
+#### Parameters
+- **digit**: Number of digital tube counting from 0 where the printing should start after display clearing.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: 0
+
+#### Returns
+None
+
+#### See also
+[printLedOff()](#printLedOff)
+
+[displayClear()](#displayClear)
+
+[Back to interface](#interface)
+
+
 <a id="printRadix"></a>
 ## printRadixOn(), printRadixOff(), printRadixToggle()
 #### Description
 The particular method performs corresponding manipulation with radix segment (usually 8th one) of particular glyph without influence on its glyph segments (first 7 segments) in the screen buffer.
+- Each method is overloaded. If there is no input parameter provided, the method performs apropriate action on all controlled digital tubes.
 - Default grid is suitable for 4-digit displays aimed for digital clocks with colon instead of decimal point of second (number 1) digit.
 
 #### Syntax
-	void printRadixOn(uint8_t grid);
-	void printRadixOff(uint8_t grid);
-	void printRadixToggle(uint8_t grid);
+	void printRadixOn(uint8_t digit);
+	void printRadixOn();
+	void printRadixOff(uint8_t digit);
+	void printRadixOff();
+	void printRadixToggle(uint8_t digit);
+	void printRadixToggle();
 
 #### Parameters
-- **grid**: Driver's grid (LED digit) number counting from 0, which radix segment should be manipulated.
-	- **Valid values**: 0 ~ [grids](#prm_grids) from constructor
-	- **Default value**: 1 (second digit for usual clock LED displays)
+- **digit**: Driver's digit tube number counting from 0, which radix segment should be manipulated.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: none
 
 #### Returns
 None
 
 #### See also
-[printRadixClear()](#printRadixFull)
+[printDigitOn()](#printDigitSwitch)
 
-[printRadixFill()](#printRadixFull)
-
-[Back to interface](#interface)
-
-
-<a id="printRadixFull"></a>
-## printRadixClear(), printRadixFill()
-#### Description
-The particular method performs corresponding manipulation with all radix segments at once in screen buffer without changing glyph segments.
-- At clearing all glyph segments are turned off.
-- At filling all glyph segments are turned on. It is suitable for testing a display itself.
-
-#### Syntax
-	void printRadixClear();
-	void printRadixFill();
-
-#### Parameters
-None
-
-#### Returns
-None
-
-#### See also
-[printRadixOn()](#printRadix)
-
-[printRadixOff()](#printRadix)
-
-[printRadixToggle()](#printRadix)
+[printDigitOff()](#printDigitSwitch)
 
 [Back to interface](#interface)
 
 
-<a id="printGrid"></a>
-## printGrid()
+<a id="printDigit"></a>
+## printDigit()
 #### Description
-The method sets glyph segments (first 7 ones) of particular glyph without influence on its radix segment in the screen buffer.
-- Default grid is for the very first digit of the display and grid of the controller.
+The method sets glyph segments (first 7 ones) of particular digital tube without influence on its radix segment in the screen buffer.
+- The method is overloaded. If there is one input parameter provided, it is considered as a segment mask for current print position set at recent printing action.
 - The method is useful for writing to the display without any font used.
 
 #### Syntax
-	void printGrid(uint8_t grid);
+	void printDigit(uint8_t digit, uint8_t segmentMask);
+	void printDigit(uint8_t segmentMask);
 
 #### Parameters
-- **grid**: Driver's grid (LED digit) number counting from 0, which glyph segments should be manipulated.
-	- **Valid values**: 0 ~ [grids](#prm_grids) from constructor
-	- **Default value**: 0
+- **digit**: Driver's digital tube number counting from 0, which glyph segments should be manipulated.
+	- **Valid values**: 0 ~ 5 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: none
 
 
-- **segmentMask**: Bit mask defining what segments should be turned on. Segments marking starting from A to G relate to mask bits 0 to 6 counting from least significant bit. The 7th bit relates to radix segment and therefore it is ignored.
+- **segmentMask**: Bit mask defining what segments should be turned on. Segments marks starting from A to G relate to mask bits 0 to 6 counting from the least significant bit. The 7th bit relates to radix segment and therefore it is ignored.
 	- **Valid values**: 0 ~ 127
-	- **Default value**: 0x7F (all segments set)
+	- **Default value**: none
 
 #### Returns
 None
 
 #### See also
-[printClear()](#printGridFull)
+[printDigitOn()](#printDigitSwitch)
 
-[printFill()](#printGridFull)
+[printDigitOff()](#printDigitSwitch)
 
 [Back to interface](#interface)
 
 
-<a id="printGridFull"></a>
-## printClear(), printFill()
+<a id="printDigitSwitch"></a>
+## printDigitOn(), printDigitOff()
 #### Description
-The particular method performs corresponding manipulation with all glyph segments at once of the display without changing glyph radix segments.
+The particular method performs corresponding manipulation turning on or off with all glyph segments at once of the display without changing glyph radix segments.
+- Each method is overloaded. If there is no input parameter provided, the method performs apropriate action on all controlled digital tubes.
 
 #### Syntax
-	void printClear();
-	void printFill();
+	void printDigitOn(uint8_t digit);
+	void printDigitOn();
+	void printDigitOff(uint8_t digit);
+	void printDigitOff();
 
 #### Parameters
-None
+- **digit**: Driver's digit tube number counting from 0, which glyph segments should be manipulated.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: none
 
 #### Returns
 None
 
 #### See also
-[printGrid()](#printGrid)
+[printDigit()](#printDigit)
+
+[Back to interface](#interface)
+
+
+<a id="printText"></a>
+## printText()
+#### Description
+The method prints text starting from provided or default position on digital tubes.
+- The method clears the display right before printing.
+- It is a wrapper method for subsequent calling methods [displayClear()](#displayClear) and system method *print()*.
+
+#### Syntax
+	void printText(const char* text, uint8_t digit);
+	void printText(String text, uint8_t digit);
+
+#### Parameters
+- **text**: Pointer to a text that should be printed.
+	- **Valid values**: microcontroller's addressing range
+	- **Default value**: none
+
+- **digit**: Driver's digit tube number counting from 0, where printing should start.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: 0
+
+#### Returns
+None
+
+#### See also
+[printDigit()](#printDigit)
+
+[Back to interface](#interface)
+
+
+<a id="placePrint"></a>
+## placePrint()
+#### Description
+The method stores desired position of a digital tube where the subsequent print should start.
+- The method should be call right before any printing method, which does not have its input parameter for setting printing position.
+
+#### Syntax
+	void placePrint(uint8_t digit);
+
+#### Parameters
+- **digit**: Printing position for starting a print action.
+	- **Valid values**: 0 ~ 7 ([digits - 1](#prm_digits) from constructor)
+	- **Default value**: 0
+
+#### Returns
+None
+
+#### See also
+[printDigit()](#printDigit)
+
+[Back to interface](#interface)
+
+
+<a id="printLed"></a>
+## printLedOnRed(), printLedToggleRed(), printLedOnGreen(), printLedToggleGreen()
+#### Description
+The particular method turns on or toggles red or green LEDs without influence on digital tubes in the screen buffer.
+- If there is no input LED number provided, the methods manipulates all module's LEDs of corresponding color at once.
+- If a display module does not have two-color LEDs implemented, manipulation with green LEDs has no effect, just on red ones has.
+
+#### Syntax
+	void printLedOnRed(uint8_t led);
+	void printLedOnRed();
+	void printLedToggleRed(uint8_t led);
+	void printLedToggleRed();
+	void printLedOnGreen(uint8_t led);
+	void printLedOnGreen();
+	void printLedToggleGreen(uint8_t led);
+	void printLedToggleGreen();
+
+#### Parameters
+- **led**: Driver's LED number counting from 0.
+	- **Valid values**: 0 ~ 7 ([leds - 1](#prm_leds) from constructor)
+	- **Default value**: none
+
+#### Returns
+None
+
+#### See also
+[printLedOff()](#printLedOff)
+
+[printLedSwap()](#printLedSwap)
+
+[Back to interface](#interface)
+
+
+<a id="printLedOff"></a>
+## printLedOff()
+#### Description
+The method turns off LEDs without influence on digital tubes in the screen buffer, i.e., in case of two-color LEDs both colors.
+- If there is no input LED number provided, the methods turns of all module's LEDs at once.
+
+#### Syntax
+	void printLedOff(uint8_t led);
+	void printLedOff();
+
+#### Parameters
+- **led**: Driver's LED number counting from 0.
+	- **Valid values**: 0 ~ 7 ([leds - 1](#prm_leds) from constructor)
+	- **Default value**: none
+
+#### Returns
+None
+
+#### See also
+[printLedOnRed()](#printLed)
+
+[printLedOnGreen()](#printLed)
+
+[Back to interface](#interface)
+
+
+<a id="printLedSwap"></a>
+## printLedSwap()
+#### Description
+The method swaps colors of a turned on two-color LEDs without influence on digital tubes in the screen buffer, i.e., changes red to green and vice versa.
+- The color swapping is realized by negating LED value in the screen buffer.
+- The color swapping occurs only if some of color was turned on right before swapping.
+- If a LED was turned off before swapping, both color are turned on; however, the red has precedence because color mixture is not supported by a display module.
+- If a display module has just red LEDs implemented, the swapping has effect of toggling a red LED.
+- If there is no input LED number provided, the methods turns of all module's LEDs at once.
+
+#### Syntax
+	void printLedSwap(uint8_t led);
+	void printLedSwap();
+
+#### Parameters
+- **led**: Driver's LED number counting from 0.
+	- **Valid values**: 0 ~ 7 ([leds - 1](#prm_leds) from constructor)
+	- **Default value**: none
+
+#### Returns
+None
+
+#### See also
+[printLedOnRed()](#printLed)
+
+[printLedToggleRed()](#printLed)
+
+[printLedOnGreen()](#printLed)
+
+[printLedOff()](#printLedOff)
 
 [Back to interface](#interface)
 
@@ -345,7 +540,7 @@ None
 The library inherits the system *Print* class, so that all regular print functions can be used.
 - Actually all print functions eventually call one of listed write methods, so that all of them should be implemented.
 - If some character (ASCII) code is not present in the font table, i.e., it is unknown for the library, that character is ignored and not displayed.
-- If unknown character has ASCII code of comma, dot, or colon, the library turns on the radix segments of the recently displayed digit (lastly manipulated grid). Thus, the decimal points or colon can be present in displayed string at proper position and does not need to be control separately.
+- If unknown character has ASCII code of *comma*, *dot*, or *colon*, the library turns on the radix segments of the recently displayed digit (lastly manipulated grid). Thus, the decimal points or colon can be present in displayed string at proper position and does not need to be control separately.
 
 #### Syntax
 	size_t write(uint8_t ascii);
@@ -353,30 +548,127 @@ The library inherits the system *Print* class, so that all regular print functio
 	size_t write(const uint8_t* buffer, size_t size);
 
 #### Parameters
-- **ascii**: ASCII code of a character that should be displayed at the current grid position. The methods is usually utilized internally by system prints.
+- **ascii**: ASCII code of a character that should be displayed at the current print position. The methods is usually utilized internally by system prints.
 	- **Valid values**: 0 ~ 255
 	- **Default value**: none
 
 
-- **text**: Pointer to a null terminated string that should be displayed from the very beginning of the display, i.e., from the first digit.
-	- **Valid values**: microcontroller addressing range
+- **text**: Pointer to a null terminated string that should be displayed from the current print position.
+	- **Valid values**: microcontroller's addressing range
 	- **Default value**: none
 
 
-- **buffer**: Pointer to a string, which part should be displayed from the very beginning of the display, i.e., from the first digit.
-	- **Valid values**: microcontroller addressing range
+- **buffer**: Pointer to a string, which part should be displayed from the current print position.
+	- **Valid values**: microcontroller's addressing range
 	- **Default value**: none
 
 
-- **size**: Number of characters that should be displayed from the very beginning of the display, i.e., from the first digit.
-	- **Valid values**: microcontroller addressing range
+- **size**: Number of characters that should be displayed from the current print position.
+	- **Valid values**: microcontroller's addressing range
 	- **Default value**: none
 
 #### Returns
 None
 
 #### See also
-[printGrid()](#printGrid)
+[printText()](#printText)
+
+[placePrint()](#placePrint)
+
+[Back to interface](#interface)
+
+
+<a id="registerHandler"></a>
+## registerHandler()
+#### Description
+The method registers a procedure, which is called when particular action with a key of module's keypad has been performed.
+- The handler receives a key number and an action defined by appropriate [constant](#constants).
+
+#### Syntax
+	void registerHandler(gbj_tm1638_handler handler);
+
+#### Parameters
+- **handler**: Pointer to a handler procedure of type [gbj_tm1638_handler](#gbj_tm1638_handler).
+	- **Valid values**: microcontroller's addressing range
+	- **Default value**: none
+
+#### Returns
+None
+
+#### Example
+Handler is defined in a sketch as a standalone procedure. Only registering that method makes a hadler from it.
+
+``` cpp
+gbj_tm1638 Sled = gbj_tm1638();
+
+void keyHandler(uint8_t key, uint8_t action)
+{
+  switch (action)
+  {
+    case GBJ_TM1638_KEY_CLICK:
+      Sled.printLedOnRed(key);
+      break;
+
+    case GBJ_TM1638_KEY_HOLD:
+      Sled.printDigitOn(key);
+      break;
+
+    case GBJ_TM1638_KEY_CLICK_DOUBLE:
+      Sled.printLedOff(key);
+      break;
+
+    case GBJ_TM1638_KEY_HOLD_DOUBLE:
+      Sled.printDigitOff(key);
+      break;
+  }
+}
+
+setup()
+{
+ Sled.begin();
+ Sled.registerHandler(keyHandler);
+}
+```
+
+#### See also
+[gbj_tm1638_handler](#gbj_tm1638_handler)
+
+[Back to interface](#interface)
+
+
+<a id="run"></a>
+## run()
+#### Description
+The method processes timing and catches keypad's keys presses and calls a handler if particular action is detected and if some handler is registered.
+- The method should be call very often. The best place is in the loop() function of a sketch, which should be without delay() function or other blocking activities.
+
+#### Syntax
+	void run();
+
+#### Parameters
+None
+
+#### Returns
+None
+
+#### Example
+``` cpp
+gbj_tm1638 Sled = gbj_tm1638();
+
+setup()
+{
+ Sled.begin();
+ Sled.registerHandler(keyHandler);
+}
+
+loop()
+{
+ Sled.run();
+}
+```
+
+#### See also
+[registerHandler()](#registerHandler)
 
 [Back to interface](#interface)
 
@@ -427,8 +719,8 @@ New (actual) result code of recent operation.
 [Back to interface](#interface)
 
 
-<a id="setContrastControl"></a>
-## setContrastControl()
+<a id="setContrast"></a>
+## setContrast()
 #### Description
 The method sets the level of the display contrast.
 - The contrast is perceived as the brightness of the display.
@@ -468,15 +760,13 @@ The method gathers font parameters for printing characters on 7-segment displays
 	- Because the font table is referenced by a pointer and not as an array, the table size cannot be calculated internally, but has to be defined externally usually by the function ```sizeof```.
 	- The table size in conjunction with font character pair of bytes determines the number of characters used for printing.
 	- The size can be smaller than the real size of the table, however, the size should be a multiple of 2.
-		- *Valid values*: 0 ~  255 (maximal 127 7-segments characters)
+		- *Valid values*: 0 ~  255 (maximal 127 different characters)
 		- *Default value*: none
 
 #### Returns
 None
 
 #### Example
-Parameters of a font table are usually defined as pre-processor macro constants in including definition file, so that it is not needed to determine them manually.
-
 ``` cpp
 #include "font7seg_basic.h"
 gbj_tm1638 Sled = gbj_tm1638();
@@ -535,23 +825,84 @@ Recently used command code.
 [Back to interface](#interface)
 
 
-<a id="getPrintWidth"></a>
-## getPrintWidth()
+<a id="getLastCommand"></a>
+## getLastCommand()
 #### Description
-The method returns print dimension of the display in horizontal direction.
-- Print dimension expresses the current display capacity in horizontal direction, i.e., the number of LED digits defined in the [constructor](#prm_grids).
+The method returns the command code used at recent communication with controller. In conjunction with returned result or error code of particular method it is possible to detect the source or reason of a communication error.
 
 #### Syntax
-	uint8_t getPrintWidth();
+	uint8_t getLastCommand();
 
 #### Parameters
 None
 
 #### Returns
-Current print width counting in glyphs.
+Recently used command code.
+
+#### See also
+[Error codes](#constants)
+
+[Back to interface](#interface)
+
+
+<a id="getGeometry"></a>
+## getDigits(), getLeds(), getKeys()
+#### Description
+The corresponding method returns number of particular controlled equipment items of a display module as it was defined in the corresponding constructor's [parameter](#gbj_tm1638).
+
+#### Syntax
+	uint8_t getDigits();
+	uint8_t getLeds();
+	uint8_t getKeys();
+
+#### Parameters
+None
+
+#### Returns
+Current number of controlled items of corresponding type by a library instance object.
 
 #### See also
 [gbj_tm1638()](#gbj_tm1638)
+
+[Back to interface](#interface)
+
+
+<a id="getContrast"></a>
+## getContrast()
+#### Description
+The method returns the current contrast/brightness level store in the library instance object.
+
+#### Syntax
+	uint8_t getContrast();
+
+#### Parameters
+None
+
+#### Returns
+Current contrast level counting in the range 0 ~ 7.
+
+#### See also
+[setContrast()](#setContrast)
+
+[Back to interface](#interface)
+
+
+<a id="getPrint"></a>
+## getPrint()
+#### Description
+The method returns the current print position set by recent print activity.
+
+#### Syntax
+	uint8_t getPrint();
+
+#### Parameters
+None
+
+#### Returns
+Current printing position counting from 0. It may get beyond the maximal controlled or implemented digital tube.
+
+#### See also
+[placePrint()](#placePrint)
 
 [Back to interface](#interface)
 

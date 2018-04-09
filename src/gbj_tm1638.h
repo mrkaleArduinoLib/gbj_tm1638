@@ -316,14 +316,14 @@ inline void placePrint(uint8_t digit = 0) { if (digit < _status.digits) _print.d
   Print text at desired printing position
 
   DESCRIPTION:
-  The method prints text starting on provided or default position on digital tubes.
+  The method prints text starting from provided or default position on digital tubes.
   - The method clears the display right before printing.
 
   PARAMETERS:
   text - Pointer to a text that should be printed.
          - Data type: non-negative integer
          - Default value: none
-         - Limited range: microcontroller addressing range
+         - Limited range: microcontroller's addressing range
 
   digit - Printing position for starting the printing.
           - Data type: non-negative integer
@@ -362,19 +362,19 @@ inline void printText(String text, uint8_t digit = 0) { displayClear(digit); pri
          very beginnng of the display, i.e., from the first digit.
          - Data type: non-negative integer
          - Default value: none
-         - Limited range: microcontroller addressing range
+         - Limited range: microcontroller's addressing range
 
   buffer - Pointer to a string, which part should be displayed from the very
            beginnng of the display, i.e., from the first digit.
            - Data type: non-negative integer
            - Default value: none
-           - Limited range: microcontroller addressing range
+           - Limited range: microcontroller's addressing range
 
   size - Number of characters that should be displayed from the very beginnng of
          the display, i.e., from the first digit.
          - Data type: non-negative integer
          - Default value: none
-         - Limited range: microcontroller addressing range
+         - Limited range: microcontroller's addressing range
 */
 size_t write(uint8_t ascii);
 size_t write(const char* text);
@@ -418,13 +418,13 @@ inline void printLedSwap() { for (uint8_t led = 0; led < _status.leds; led++) pr
   Register handler procedure for key action processing
 
   DESCRIPTION:
-  The method registers a procedure, which is called when particular action with a key of module's keypad is performed.
+  The method registers a procedure, which is called when particular action with a key of module's keypad has been performed.
 
   PARAMETERS:
-  handler -Pointer to a handler procedure.
-           - Data type: gbj_tm1638_handler
-           - Default value: none
-           - Limited range: microcontroller addressing range
+  handler - Pointer to a handler procedure.
+            - Data type: gbj_tm1638_handler
+            - Default value: none
+            - Limited range: microcontroller's addressing range
 
   RETURN: none
 */
@@ -436,7 +436,7 @@ void registerHandler(gbj_tm1638_handler handler);
 
   DESCRIPTION:
   The method processes timing and catches keypad's keys presses and calls a handler if particular action is detected.
-  - The method should be call very often. The best place is in the loop() function of a sketch, which is without delay() function.
+  - The method should be call very often. The best place is in the loop() function of a sketch, which should be without delay() function or other blocking activities.
 
   PARAMETERS: none
 
@@ -487,7 +487,7 @@ uint8_t setContrast(uint8_t contrast = 3);
   fontTable - Pointer to a font definition table.
               - Data type: non-negative integer
               - Default value: none
-              - Limited range: microcontroller addressing range
+              - Limited range: microcontroller's addressing range
 
   fontTableSize - The number of bytes that should be utilized from the font
                   table.
@@ -511,6 +511,7 @@ inline uint8_t getLastResult() { return _status.lastResult; } // Result of a rec
 inline uint8_t getLastCommand() { return _status.lastCommand; } // Command code of a recent operation
 inline uint8_t getDigits() { return _status.digits; } // Digital tubes for displaying
 inline uint8_t getLeds() { return _status.leds; } // LEDs for displaying
+inline uint8_t getKeys() { return _status.keys; } // Keys for processing
 inline uint8_t getContrast() { return _status.contrast; } // Current contrast
 inline uint8_t getPrint() { return _print.digit; } // Current digit position
 inline bool isSuccess() { return _status.lastResult == GBJ_TM1638_SUCCESS; } // Flag about successful recent operation
