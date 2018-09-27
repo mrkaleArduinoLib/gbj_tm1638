@@ -54,7 +54,7 @@ void setup()
   Serial.begin(9600);
   Serial.println(SKETCH);
   Serial.println("Libraries:");
-  Serial.println(GBJ_TM1638_VERSION);
+  Serial.println(gbj_tm1638::VERSION);
   Serial.println("---");
   // Initialize controller
   if (Sled.begin())
@@ -70,7 +70,7 @@ void loop()
 {
   if (Sled.isError()) return;
   // Test all contrast levels
-  for (unsigned char contrast = 0; contrast < 8; contrast++)
+  for (unsigned char contrast = 0; contrast <= Sled.getContrastMax(); contrast++)
   {
     Sled.printLedOff();
     Sled.printLedOnRed(contrast);

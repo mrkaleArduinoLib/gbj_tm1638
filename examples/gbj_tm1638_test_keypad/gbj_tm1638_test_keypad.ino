@@ -16,7 +16,7 @@
   - By single clicking on a key, the sketch turns on corresponding red LED.
   - By double clicking on a key, the sketch turns off corresponding red LED.
   - By single holding a key pressed, the sketch turns on corresponding tube.
-  - By double holding a key pressed, the sketch turns of corresponding tube.
+  - By double holding a key pressed, the sketch turns off corresponding tube.
 
   LICENSE:
   This program is free software; you can redistribute it and/or modify
@@ -53,23 +53,23 @@ void keyHandler(uint8_t key, uint8_t action)
   Serial.print(": ");
   switch (action)
   {
-    case GBJ_TM1638_KEY_CLICK:
-      Serial.println("GBJ_TM1638_KEY_CLICK");
+    case gbj_tm1638::KEY_CLICK:
+      Serial.println("KEY_CLICK");
       Sled.printLedOnRed(key);
       break;
 
-    case GBJ_TM1638_KEY_HOLD:
-      Serial.println("GBJ_TM1638_KEY_HOLD");
+    case gbj_tm1638::KEY_HOLD:
+      Serial.println("KEY_HOLD");
       Sled.printDigitOn(key);
       break;
 
-    case GBJ_TM1638_KEY_CLICK_DOUBLE:
-      Serial.println("GBJ_TM1638_KEY_CLICK_DOUBLE");
+    case gbj_tm1638::KEY_CLICK_DOUBLE:
+      Serial.println("KEY_CLICK_DOUBLE");
       Sled.printLedOff(key);
       break;
 
-    case GBJ_TM1638_KEY_HOLD_DOUBLE:
-      Serial.println("GBJ_TM1638_KEY_HOLD_DOUBLE");
+    case gbj_tm1638::KEY_HOLD_DOUBLE:
+      Serial.println("KEY_HOLD_DOUBLE");
       Sled.printDigitOff(key);
       break;
   }
@@ -89,7 +89,7 @@ void setup()
   Serial.begin(9600);
   Serial.println(SKETCH);
   Serial.println("Libraries:");
-  Serial.println(GBJ_TM1638_VERSION);
+  Serial.println(gbj_tm1638::VERSION);
   Serial.println("---");
   Serial.println("Waiting for keypad...");
   // Initialize controller

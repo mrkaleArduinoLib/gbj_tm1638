@@ -1,4 +1,5 @@
 #include "gbj_tm1638.h"
+const String gbj_tm1638::VERSION = "GBJ_TM1638 1.0.0";
 
 
 gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
@@ -7,9 +8,9 @@ gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
   _status.pinClk = pinClk;
   _status.pinDio = pinDio;
   _status.pinStb = pinStb;
-  _status.digits = min(digits, DIGITS);
-  _status.leds = min(leds, LEDS);
-  _status.keys = min(keys, GBJ_TM1638_KEYS_PRESENT);
+  _status.digits = min(digits, getDigitsMax());
+  _status.leds = min(leds, getLedsMax());
+  _status.keys = min(keys, getKeysMaxHw());
 }
 
 
@@ -19,7 +20,7 @@ uint8_t gbj_tm1638::begin()
   // Check pin duplicity
   if (_status.pinClk == _status.pinDio \
   ||  _status.pinDio == _status.pinStb \
-  ||  _status.pinStb == _status.pinClk) return setLastResult(GBJ_TM1638_ERR_PINS);
+  ||  _status.pinStb == _status.pinClk) return setLastResult(ERROR_PINS);
   // Setup pins
   pinMode(_status.pinClk, OUTPUT);
   pinMode(_status.pinDio, OUTPUT);
@@ -129,7 +130,7 @@ void gbj_tm1638::run()
 //------------------------------------------------------------------------------
 uint8_t gbj_tm1638::setContrast(uint8_t contrast)
 {
-  _status.contrast = contrast & 0x07;
+  _status.contrast = contrast & getContrastMax();
   return busSend(CMD_DISP_INIT | CMD_DISP_ON | _status.contrast);
 }
 
@@ -328,7 +329,7 @@ uint8_t gbj_tm1638::processKeypad()
         && _keys[key].keyState[4] == KEY_WAIT_LONG
         )
         {
-          keyAction = GBJ_TM1638_KEY_CLICK_DOUBLE;
+          keyAction = KEY_CLICK_DOUBLE;
         }
         if (
            _keys[key].keyState[0] == KEY_WAIT_LONG
@@ -337,7 +338,7 @@ uint8_t gbj_tm1638::processKeypad()
         && _keys[key].keyState[3] == KEY_WAIT_LONG
         )
         {
-          keyAction = GBJ_TM1638_KEY_CLICK;
+          keyAction = KEY_CLICK;
         }
         if (
            _keys[key].keyState[0] == KEY_PRESS_LONG
@@ -347,7 +348,7 @@ uint8_t gbj_tm1638::processKeypad()
         && _keys[key].keyState[4] == KEY_WAIT_LONG
         )
         {
-          keyAction = GBJ_TM1638_KEY_HOLD_DOUBLE;
+          keyAction = KEY_HOLD_DOUBLE;
         }
         if (
            _keys[key].keyState[0] == KEY_PRESS_LONG
@@ -355,7 +356,7 @@ uint8_t gbj_tm1638::processKeypad()
         && _keys[key].keyState[2] == KEY_WAIT_LONG
         )
         {
-          keyAction = GBJ_TM1638_KEY_HOLD;
+          keyAction = KEY_HOLD;
         }
         // Call key handler with key action
         if (keyAction && _keyProcesing) _keyProcesing(key, keyAction);

@@ -16,7 +16,7 @@
       to the driver and it causes to display the image on the attached digital
       tubes display and LEDs.
   - The driver TM1638 can control up to 8 digital 7-segment tubes, 8 two-color
-    LEDs, and 24 keys.
+    LEDs, and 24 keys. However, predefined is for 8 keys hardware.
   - The library controls 7-segment glyphs (digits) independently from radix 8th
     segments of glyphs.
 
@@ -31,7 +31,6 @@
  */
 #ifndef GBJ_TM1638_H
 #define GBJ_TM1638_H
-#define GBJ_TM1638_VERSION "GBJ_TM1638 1.0.0"
 
 #if defined(__AVR__)
   #if ARDUINO >= 100
@@ -46,19 +45,8 @@
 
 // Hardware
 #ifndef GBJ_TM1638_KEYS_PRESENT
-#define GBJ_TM1638_KEYS_PRESENT     8 // Redefine it in a sketch for your module
+#define GBJ_TM1638_KEYS_PRESENT     8 // Redefine it in advance in a sketch for your module
 #endif
-
-// Result and error codes
-#define GBJ_TM1638_SUCCESS          0
-#define GBJ_TM1638_ERR_PINS         255
-#define GBJ_TM1638_ERR_ACK          254
-
-// Key action types (0 is prohibited - will be ignored)
-#define GBJ_TM1638_KEY_CLICK        1
-#define GBJ_TM1638_KEY_CLICK_DOUBLE 2
-#define GBJ_TM1638_KEY_HOLD         3
-#define GBJ_TM1638_KEY_HOLD_DOUBLE  4
 
 
 /*
@@ -79,8 +67,8 @@
   action - The action with a key, which has been executed recently.
            - Data type: non-negative integer
            - Default value: none
-           - Limited range: GBJ_TM1638_KEY_CLICK, GBJ_TM1638_KEY_CLICK_DOUBLE, 
-                            GBJ_TM1638_KEY_HOLD, GBJ_TM1638_KEY_HOLD_DOUBLE
+           - Limited range: KEY_CLICK, KEY_CLICK_DOUBLE,
+                            KEY_HOLD, KEY_HOLD_DOUBLE
 
   RETURN: none
 */
@@ -90,6 +78,27 @@ typedef void (*gbj_tm1638_handler)(uint8_t key, uint8_t action);
 class gbj_tm1638 : public Print
 {
 public:
+
+
+//------------------------------------------------------------------------------
+// Public constants
+//------------------------------------------------------------------------------
+static const String VERSION;
+enum ResultCodes
+{
+  SUCCESS = 0,
+  ERROR_PINS = 255, // Error defining pins, usually both are the same
+  ERROR_ACK = 254, // Error at acknowledging a command
+};
+enum KeyActions
+{
+  KEY_CLICK = 1,
+  KEY_CLICK_DOUBLE = 2,
+  KEY_HOLD = 3,
+  KEY_HOLD_DOUBLE = 4,
+};
+
+
 //------------------------------------------------------------------------------
 // Public methods
 //------------------------------------------------------------------------------
@@ -337,6 +346,31 @@ inline void printText(String text, uint8_t digit = 0) { displayClear(digit); pri
 
 
 /*
+  Print text at desired printing position without impact on radixes
+
+  DESCRIPTION:
+  The method prints text starting from provided or default position on digital
+  tubes and leaves radixes intact.
+  - The method clears only digit without radixes right before printing.
+
+  PARAMETERS:
+  text - Pointer to a text that should be printed.
+         - Data type: non-negative integer
+         - Default value: none
+         - Limited range: microcontroller's addressing range
+
+  digit - Printing position for starting the printing.
+          - Data type: non-negative integer
+          - Default value: 0
+          - Limited range: 0 ~ 7 (constructor's parameter digits - 1)
+
+  RETURN: none
+*/
+inline void printGlyphs(const char* text, uint8_t digit = 0) { printDigitOff(); placePrint(digit); print(text); };
+inline void printGlyphs(String text, uint8_t digit = 0) { printDigitOff(); placePrint(digit); print(text); };
+
+
+/*
   Print class inheritance
 
   DESCRIPTION:
@@ -448,8 +482,8 @@ void run();
 //------------------------------------------------------------------------------
 // Public setters - they usually return result code.
 //------------------------------------------------------------------------------
-inline void initLastResult() { _status.lastResult = GBJ_TM1638_SUCCESS; }
-inline uint8_t setLastResult(uint8_t lastResult = GBJ_TM1638_SUCCESS) { return _status.lastResult = lastResult; }
+inline void initLastResult() { _status.lastResult = SUCCESS; }
+inline uint8_t setLastResult(uint8_t lastResult = SUCCESS) { return _status.lastResult = lastResult; }
 
 
 /*
@@ -510,11 +544,16 @@ void setFont(const uint8_t* fontTable, uint8_t fontTableSize);
 inline uint8_t getLastResult() { return _status.lastResult; } // Result of a recent operation
 inline uint8_t getLastCommand() { return _status.lastCommand; } // Command code of a recent operation
 inline uint8_t getDigits() { return _status.digits; } // Digital tubes for displaying
+inline uint8_t getDigitsMax() { return DIGITS; } // Maximal supported digital tubes
 inline uint8_t getLeds() { return _status.leds; } // LEDs for displaying
+inline uint8_t getLedsMax() { return LEDS; } // Maximal supported LEDs
 inline uint8_t getKeys() { return _status.keys; } // Keys for processing
+inline uint8_t getKeysMax() { return KEYS; } // Maximal supported keys
+inline uint8_t getKeysMaxHw() { return GBJ_TM1638_KEYS_PRESENT; } // Hardware supported keys
 inline uint8_t getContrast() { return _status.contrast; } // Current contrast
+inline uint8_t getContrastMax() { return 7; } // Maximal contrast
 inline uint8_t getPrint() { return _print.digit; } // Current digit position
-inline bool isSuccess() { return _status.lastResult == GBJ_TM1638_SUCCESS; } // Flag about successful recent operation
+inline bool isSuccess() { return _status.lastResult == SUCCESS; } // Flag about successful recent operation
 inline bool isError() { return !isSuccess(); } // Flag about erroneous recent operation
 
 
@@ -544,7 +583,7 @@ enum Geometry // Controller TM1638
   DIGITS = 8, // Usable and maximal implemented digital tubes
   LEDS = 8, // Usable and maximal implemented two-color LEDs
   KEYS = 8, // Default keys in the keypad
-  BYTES_ADDR = 16, // By datasheet maximal addressable register position
+  BYTES_ADDR = 16, // By datasheet maximal addressable register positions
   BYTES_SCAN = 4, // By datasheet maximal key press detection bytes
 };
 enum Timing
@@ -610,6 +649,7 @@ struct
 
 // Pointers to global (default) alarm handlers
 gbj_tm1638_handler _keyProcesing;
+
 
 //------------------------------------------------------------------------------
 // Private methods

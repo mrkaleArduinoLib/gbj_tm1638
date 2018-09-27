@@ -56,7 +56,8 @@ void setup()
   Serial.begin(9600);
   Serial.println(SKETCH);
   Serial.println("Libraries:");
-  Serial.println(GBJ_TM1638_VERSION);
+  Serial.println(gbj_tm1638::VERSION);
+  Serial.println("Fonts:");
   Serial.println(GBJ_FONT7SEG_VERSION);
   Serial.println("---");
   // Initialize controller
