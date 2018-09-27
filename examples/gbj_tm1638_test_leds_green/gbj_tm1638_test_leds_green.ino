@@ -13,7 +13,7 @@
   - The sketch is configured to work with all 8 green LEDs with common cathode.
   - Some display modules are not equipped with two-color LEDs, so that do not
     use this sketch with modules just with red LEDs.
-  
+
   LICENSE:
   This program is free software; you can redistribute it and/or modify
   it under the terms of the MIT License (MIT).
@@ -52,7 +52,7 @@ void setup()
   Serial.begin(9600);
   Serial.println(SKETCH);
   Serial.println("Libraries:");
-  Serial.println(GBJ_TM1638_VERSION);
+  Serial.println(gbj_tm1638::VERSION);
   Serial.println("---");
   // Initialize controller
   if (Sled.begin())
