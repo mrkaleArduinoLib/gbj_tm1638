@@ -107,10 +107,10 @@ It is possible to use functions from the parent library [Print](#dependency), wh
 - [run()](#run)
 
 #### Setters
-- [initLastResult()](#initLastResult)
 - [setLastResult()](#setLastResult)
 - [**setContrast()**](#setContrast)
 - [setFont()](#setFont)
+- [initLastResult()](#initLastResult)
 
 #### Getters
 - [getLastResult()](#getLastResult)
@@ -866,9 +866,6 @@ None
 
 #### Returns
 Recently used command code.
-
-#### See also
-[Error codes](#constants)
 
 [Back to interface](#interface)
 
