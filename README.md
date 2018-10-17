@@ -204,7 +204,7 @@ The library instance object for a display module.
 <a id="begin"></a>
 ## begin()
 #### Description
-The method sets the microcontroller's pins dedicated for the controller and performs initial sequence recommended by the data sheet for the controller.
+The method checks the microcontroller's pins defined in the [constructor](gbj_tm1638) and performs initial sequence recommended by the data sheet for the controller.
 - The method clears all digital tubes including radixes and turns off all LEDs.
 - The method sets a display module to the normal operating mode.
 - The method checks whether some two pins set by constructor are not mutually equal.
