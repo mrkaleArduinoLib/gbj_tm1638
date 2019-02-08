@@ -86,9 +86,12 @@ size_t  gbj_tm1638::write(const uint8_t* buffer, size_t size)
 //------------------------------------------------------------------------------
 uint8_t gbj_tm1638::display()
 {
+  // Needed bytes in the buffer
+  uint8_t bufferLen = max(getDigits(), getLeds()) * 2;
+  if (getDigits() > getLeds()) bufferLen--;
   // Automatic addressing
   if (busSend(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_WRITE | CMD_DATA_AUTO)) return getLastResult();
-  if (busSend(CMD_ADDR_INIT, _print.buffer, sizeof(_print.buffer) / sizeof(_print.buffer[0]))) return getLastResult();
+  if (busSend(CMD_ADDR_INIT, _print.buffer, bufferLen)) return getLastResult();
   return getLastResult();
 }
 
@@ -157,7 +160,6 @@ void gbj_tm1638::beginTransmission()
 {
   digitalWrite(_status.pinStb, HIGH); // Finish previous communication for sure
   digitalWrite(_status.pinClk, LOW); // For active rising edge of clock pulse
-  waitPulseClk();
   digitalWrite(_status.pinStb, LOW); // Start communication
 }
 
@@ -166,7 +168,6 @@ void gbj_tm1638::beginTransmission()
 void gbj_tm1638::endTransmission()
 {
   digitalWrite(_status.pinStb, HIGH);
-  waitPulseClk();
 }
 
 
@@ -221,7 +222,6 @@ uint8_t gbj_tm1638::busReceive(uint8_t command, uint8_t* buffer)
 {
   beginTransmission();
   busWrite(setLastCommand(command));
-  waitPulseClk();
   // Read bytes
   pinMode(_status.pinDio, INPUT);
   for (uint8_t bufferIndex = 0; bufferIndex < BYTES_SCAN; bufferIndex++)
