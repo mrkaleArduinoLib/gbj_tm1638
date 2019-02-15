@@ -159,7 +159,7 @@ void gbj_tm1638::waitPulseClk()
 void gbj_tm1638::beginTransmission()
 {
   digitalWrite(_status.pinStb, HIGH); // Finish previous communication for sure
-  digitalWrite(_status.pinClk, LOW); // For active rising edge of clock pulse
+  digitalWrite(_status.pinClk, HIGH);
   digitalWrite(_status.pinStb, LOW); // Start communication
 }
 
