@@ -26,9 +26,7 @@ uint8_t gbj_tm1638::begin()
   pinMode(_status.pinDio, OUTPUT);
   pinMode(_status.pinStb, OUTPUT);
   // Initialize controller
-  moduleClear();
-  if (setContrast()) return getLastResult();
-  return display();
+  return setContrast();
 }
 
 
