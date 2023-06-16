@@ -5,12 +5,12 @@ const String gbj_tm1638::VERSION = "GBJ_TM1638 1.0.0";
 gbj_tm1638::gbj_tm1638(uint8_t pinClk, uint8_t pinDio, uint8_t pinStb, \
   uint8_t digits, uint8_t leds, uint8_t keys)
 {
-  _status.pinClk = pinClk;
-  _status.pinDio = pinDio;
-  _status.pinStb = pinStb;
-  _status.digits = min(digits, getDigitsMax());
-  _status.leds = min(leds, getLedsMax());
-  _status.keys = min(keys, getKeysMaxHw());
+  status_.pinClk = pinClk;
+  status_.pinDio = pinDio;
+  status_.pinStb = pinStb;
+  status_.digits = min(digits, getDigitsMax());
+  status_.leds = min(leds, getLedsMax());
+  status_.keys = min(keys, getKeysMaxHw());
 }
 
 
@@ -18,13 +18,13 @@ uint8_t gbj_tm1638::begin()
 {
   initLastResult();
   // Check pin duplicity
-  if (_status.pinClk == _status.pinDio \
-  ||  _status.pinDio == _status.pinStb \
-  ||  _status.pinStb == _status.pinClk) return setLastResult(ERROR_PINS);
+  if (status_.pinClk == status_.pinDio \
+  ||  status_.pinDio == status_.pinStb \
+  ||  status_.pinStb == status_.pinClk) return setLastResult(ERROR_PINS);
   // Setup pins
-  pinMode(_status.pinClk, OUTPUT);
-  pinMode(_status.pinDio, OUTPUT);
-  pinMode(_status.pinStb, OUTPUT);
+  pinMode(status_.pinClk, OUTPUT);
+  pinMode(status_.pinDio, OUTPUT);
+  pinMode(status_.pinStb, OUTPUT);
   // Initialize controller
   return setContrast();
 }
@@ -36,19 +36,19 @@ uint8_t gbj_tm1638::begin()
 // Print one character determined by a byte of ASCII code
 size_t gbj_tm1638::write(uint8_t ascii)
 {
-  if (_print.digit >= _status.digits) return 0;
+  if (print_.digit >= status_.digits) return 0;
   uint8_t mask = getFontMask(ascii);
   if (mask == FONT_MASK_WRONG)
   {
     if (String(".,:").indexOf(ascii) >= 0)  // Detect radix
     {
-      printRadixOn(_print.digit - 1); // Set radix to the previous digit
+      printRadixOn(print_.digit - 1); // Set radix to the previous digit
     }
     return 0;
   }
   else
   {
-    printDigit(_print.digit, mask);
+    printDigit(print_.digit, mask);
     return 1;
   }
 }
@@ -59,7 +59,7 @@ size_t  gbj_tm1638::write(const char* text)
 {
   uint8_t digits = 0;
   uint8_t i = 0;
-  while (text[i] != '\0' && _print.digit < _status.digits)
+  while (text[i] != '\0' && print_.digit < status_.digits)
   {
     digits += write(text[i++]);
   }
@@ -71,7 +71,7 @@ size_t  gbj_tm1638::write(const char* text)
 size_t  gbj_tm1638::write(const uint8_t* buffer, size_t size)
 {
   uint8_t digits = 0;
-  for (uint8_t i = 0; i < size && _print.digit < _status.digits; i++)
+  for (uint8_t i = 0; i < size && print_.digit < status_.digits; i++)
   {
     digits += write(buffer[i]);
   }
@@ -89,14 +89,14 @@ uint8_t gbj_tm1638::display()
   if (getDigits() > getLeds()) bufferLen--;
   // Automatic addressing
   if (busSend(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_WRITE | CMD_DATA_AUTO)) return getLastResult();
-  if (busSend(CMD_ADDR_INIT, _print.buffer, bufferLen)) return getLastResult();
+  if (busSend(CMD_ADDR_INIT, print_.buffer, bufferLen)) return getLastResult();
   return getLastResult();
 }
 
 
 uint8_t gbj_tm1638::displayOn()
 {
-  return setContrast(_status.contrast);
+  return setContrast(status_.contrast);
 }
 
 
@@ -111,17 +111,17 @@ uint8_t gbj_tm1638::displayOff()
 //------------------------------------------------------------------------------
 void gbj_tm1638::registerHandler(gbj_tm1638_handler handler)
 {
-  _keyProcesing = handler;
+  keyProcesing_ = handler;
 }
 
 
 void gbj_tm1638::run()
 {
-  if (_status.keys == 0) return; // No key processing when no key is enabled
+  if (status_.keys == 0) return; // No key processing when no key is enabled
   uint32_t tsNow = millis();
-  if (tsNow - _status.scanTimestamp >= TIMING_SCAN)
+  if (tsNow - status_.scanTimestamp >= TIMING_SCAN)
   {
-    _status.scanTimestamp = tsNow;
+    status_.scanTimestamp = tsNow;
     processKeypad();
   }
 }
@@ -131,15 +131,15 @@ void gbj_tm1638::run()
 //------------------------------------------------------------------------------
 uint8_t gbj_tm1638::setContrast(uint8_t contrast)
 {
-  _status.contrast = contrast & getContrastMax();
-  return busSend(CMD_DISP_INIT | CMD_DISP_ON | _status.contrast);
+  status_.contrast = contrast & getContrastMax();
+  return busSend(CMD_DISP_INIT | CMD_DISP_ON | status_.contrast);
 }
 
 
 void gbj_tm1638::setFont(const uint8_t* fontTable, uint8_t fontTableSize)
 {
-  _font.table = fontTable;
-  _font.glyphs = fontTableSize / FONT_WIDTH;
+  font_.table = fontTable;
+  font_.glyphs = fontTableSize / FONT_WIDTH;
 }
 
 
@@ -156,30 +156,30 @@ void gbj_tm1638::waitPulseClk()
 // Start condition - pull down STB from HIGH to LOW
 void gbj_tm1638::beginTransmission()
 {
-  digitalWrite(_status.pinStb, HIGH); // Finish previous communication for sure
-  digitalWrite(_status.pinClk, HIGH);
-  digitalWrite(_status.pinStb, LOW); // Start communication
+  digitalWrite(status_.pinStb, HIGH); // Finish previous communication for sure
+  digitalWrite(status_.pinClk, HIGH);
+  digitalWrite(status_.pinStb, LOW); // Start communication
 }
 
 
 // Stop condition - pull up STB from LOW to HIGH
 void gbj_tm1638::endTransmission()
 {
-  digitalWrite(_status.pinStb, HIGH);
+  digitalWrite(status_.pinStb, HIGH);
 }
 
 
 void gbj_tm1638::busWrite(uint8_t data)
 {
-  digitalWrite(_status.pinClk, LOW); // For active rising edge of clock pulse
-  shiftOut(_status.pinDio, _status.pinClk, LSBFIRST, data);
+  digitalWrite(status_.pinClk, LOW); // For active rising edge of clock pulse
+  shiftOut(status_.pinDio, status_.pinClk, LSBFIRST, data);
 }
 
 
 uint8_t gbj_tm1638::busRead()
 {
-  digitalWrite(_status.pinClk, LOW); // For active rising edge of clock pulse
-  uint8_t data = shiftIn(_status.pinDio, _status.pinClk, LSBFIRST);
+  digitalWrite(status_.pinClk, LOW); // For active rising edge of clock pulse
+  uint8_t data = shiftIn(status_.pinDio, status_.pinClk, LSBFIRST);
   return data;
 }
 
@@ -221,12 +221,12 @@ uint8_t gbj_tm1638::busReceive(uint8_t command, uint8_t* buffer)
   beginTransmission();
   busWrite(setLastCommand(command));
   // Read bytes
-  pinMode(_status.pinDio, INPUT);
+  pinMode(status_.pinDio, INPUT);
   for (uint8_t bufferIndex = 0; bufferIndex < BYTES_SCAN; bufferIndex++)
   {
     buffer[bufferIndex] = busRead();
   }
-  pinMode(_status.pinDio, OUTPUT);
+  pinMode(status_.pinDio, OUTPUT);
   endTransmission();
   return getLastResult();
 }
@@ -236,12 +236,12 @@ uint8_t gbj_tm1638::busReceive(uint8_t command, uint8_t* buffer)
 void gbj_tm1638::gridWrite(uint8_t segmentMask, uint8_t gridStart, uint8_t gridStop)
 {
   swapByte(gridStart, gridStop);
-  gridStop = min(gridStop, _status.digits - 1);
-  for (_print.digit = gridStart; _print.digit <= gridStop; _print.digit++)
+  gridStop = min(gridStop, status_.digits - 1);
+  for (print_.digit = gridStart; print_.digit <= gridStop; print_.digit++)
   {
     segmentMask &= 0x7F; // Clear radix bit in segment mask
-    _print.buffer[addrGrid(_print.digit)] &= 0x80;  // Clear digit bits in screen buffer
-    _print.buffer[addrGrid(_print.digit)] |= segmentMask;  // Set digit bits but leave radix bit intact
+    print_.buffer[addrGrid(print_.digit)] &= 0x80;  // Clear digit bits in screen buffer
+    print_.buffer[addrGrid(print_.digit)] |= segmentMask;  // Set digit bits but leave radix bit intact
   }
 }
 
@@ -249,11 +249,11 @@ void gbj_tm1638::gridWrite(uint8_t segmentMask, uint8_t gridStart, uint8_t gridS
 uint8_t gbj_tm1638::getFontMask(uint8_t ascii)
 {
   uint8_t mask = FONT_MASK_WRONG;
-  for (uint8_t glyph = 0; glyph < _font.glyphs; glyph++)
+  for (uint8_t glyph = 0; glyph < font_.glyphs; glyph++)
   {
-    if (ascii == pgm_read_byte(&_font.table[glyph * FONT_WIDTH + FONT_INDEX_ASCII]))
+    if (ascii == pgm_read_byte(&font_.table[glyph * FONT_WIDTH + FONT_INDEX_ASCII]))
     {
-      mask = pgm_read_byte(&_font.table[glyph*2 + FONT_INDEX_MASK]);
+      mask = pgm_read_byte(&font_.table[glyph*2 + FONT_INDEX_MASK]);
       mask &= 0x7F; // Clear radix bit not to mess with wrong mask
       break;
     }
@@ -278,7 +278,7 @@ uint8_t gbj_tm1638::processKeypad()
   // Read all possible keys including not hardware implemented
   if (busReceive(CMD_DATA_INIT | CMD_DATA_NORMAL | CMD_DATA_READ, buffer)) return getLastResult();
   // Scan buses from K3 in descending order according to the datasheet
-  for (uint8_t bus = 0; bus < _status.keys / 8 + 1; bus++)
+  for (uint8_t bus = 0; bus < status_.keys / 8 + 1; bus++)
   {
     uint8_t keyMask = 0;
     uint8_t bitMask = 0b10001 << bus; // Scanned keys for a bus
@@ -290,74 +290,74 @@ uint8_t gbj_tm1638::processKeypad()
     for (uint8_t keyBit = 0; keyBit < 8; keyBit++)
     {
       uint8_t key = keyBit + (8 * bus);
-      if (key >= _status.keys) break;
+      if (key >= status_.keys) break;
       bool keyPressed = keyMask & (1 << keyBit);
       uint8_t keyState;
       // Determine current key state
       if (keyPressed)
       {
-        _keys[key].waitScans = 0;
+        keys_[key].waitScans = 0;
         keyState = KEY_PRESS_SHORT;
-        if (_keys[key].pressScans < 255) _keys[key].pressScans++;
-        if (_keys[key].pressScans >= TIMING_SCAN_TRESHOLD_PRESS_LONG) keyState = KEY_PRESS_LONG;
+        if (keys_[key].pressScans < 255) keys_[key].pressScans++;
+        if (keys_[key].pressScans >= TIMING_SCAN_TRESHOLD_PRESS_LONG) keyState = KEY_PRESS_LONG;
       }
       else
       {
-        _keys[key].pressScans = 0;
+        keys_[key].pressScans = 0;
         keyState = KEY_WAIT_SHORT;
-        if (_keys[key].waitScans < 255) _keys[key].waitScans++;
-        if (_keys[key].waitScans >= TIMING_SCAN_TRESHOLD_WAIT) keyState = KEY_WAIT_LONG;
+        if (keys_[key].waitScans < 255) keys_[key].waitScans++;
+        if (keys_[key].waitScans >= TIMING_SCAN_TRESHOLD_WAIT) keyState = KEY_WAIT_LONG;
       }
       // Process action if state has changed
-      if (_keys[key].keyState[0] != keyState)
+      if (keys_[key].keyState[0] != keyState)
       {
         // Historize key states
-        for (uint8_t i = sizeof(_keys[key].keyState) / sizeof(_keys[key].keyState[0]) - 1; i > 0; i--)
+        for (uint8_t i = sizeof(keys_[key].keyState) / sizeof(keys_[key].keyState[0]) - 1; i > 0; i--)
         {
-          _keys[key].keyState[i] = _keys[key].keyState[i - 1];
+          keys_[key].keyState[i] = keys_[key].keyState[i - 1];
         }
-        _keys[key].keyState[0] = keyState;
+        keys_[key].keyState[0] = keyState;
         // Determine action type from key state pattern
         uint8_t keyAction = 0;
         if (
-           _keys[key].keyState[0] == KEY_WAIT_SHORT
-        && _keys[key].keyState[1] == KEY_PRESS_SHORT
-        && _keys[key].keyState[2] == KEY_WAIT_SHORT
-        && _keys[key].keyState[3] == KEY_PRESS_SHORT
-        && _keys[key].keyState[4] == KEY_WAIT_LONG
+           keys_[key].keyState[0] == KEY_WAIT_SHORT
+        && keys_[key].keyState[1] == KEY_PRESS_SHORT
+        && keys_[key].keyState[2] == KEY_WAIT_SHORT
+        && keys_[key].keyState[3] == KEY_PRESS_SHORT
+        && keys_[key].keyState[4] == KEY_WAIT_LONG
         )
         {
           keyAction = KEY_CLICK_DOUBLE;
         }
         if (
-           _keys[key].keyState[0] == KEY_WAIT_LONG
-        && _keys[key].keyState[1] == KEY_WAIT_SHORT
-        && _keys[key].keyState[2] == KEY_PRESS_SHORT
-        && _keys[key].keyState[3] == KEY_WAIT_LONG
+           keys_[key].keyState[0] == KEY_WAIT_LONG
+        && keys_[key].keyState[1] == KEY_WAIT_SHORT
+        && keys_[key].keyState[2] == KEY_PRESS_SHORT
+        && keys_[key].keyState[3] == KEY_WAIT_LONG
         )
         {
           keyAction = KEY_CLICK;
         }
         if (
-           _keys[key].keyState[0] == KEY_PRESS_LONG
-        && _keys[key].keyState[1] == KEY_PRESS_SHORT
-        && _keys[key].keyState[2] == KEY_WAIT_SHORT
-        && _keys[key].keyState[3] == KEY_PRESS_SHORT
-        && _keys[key].keyState[4] == KEY_WAIT_LONG
+           keys_[key].keyState[0] == KEY_PRESS_LONG
+        && keys_[key].keyState[1] == KEY_PRESS_SHORT
+        && keys_[key].keyState[2] == KEY_WAIT_SHORT
+        && keys_[key].keyState[3] == KEY_PRESS_SHORT
+        && keys_[key].keyState[4] == KEY_WAIT_LONG
         )
         {
           keyAction = KEY_HOLD_DOUBLE;
         }
         if (
-           _keys[key].keyState[0] == KEY_PRESS_LONG
-        && _keys[key].keyState[1] == KEY_PRESS_SHORT
-        && _keys[key].keyState[2] == KEY_WAIT_LONG
+           keys_[key].keyState[0] == KEY_PRESS_LONG
+        && keys_[key].keyState[1] == KEY_PRESS_SHORT
+        && keys_[key].keyState[2] == KEY_WAIT_LONG
         )
         {
           keyAction = KEY_HOLD;
         }
         // Call key handler with key action
-        if (keyAction && _keyProcesing) _keyProcesing(key, keyAction);
+        if (keyAction && keyProcesing_) keyProcesing_(key, keyAction);
       }
     }
   }

@@ -265,12 +265,12 @@ inline void moduleClear(uint8_t digit = 0) { printLedOff(); displayClear(digit);
 
   RETURN: none
 */
-inline void printRadixOn(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] |= 0x80; }
-inline void printRadixOn() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOn(digit); }
-inline void printRadixOff(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] &= ~0x80; }
-inline void printRadixOff() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixOff(digit); }
-inline void printRadixToggle(uint8_t digit) { if (digit < _status.digits) _print.buffer[addrGrid(digit)] ^= 0x80; }
-inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits; digit++) printRadixToggle(digit); }
+inline void printRadixOn(uint8_t digit) { if (digit < status_.digits) print_.buffer[addrGrid(digit)] |= 0x80; }
+inline void printRadixOn() { for (uint8_t digit = 0; digit < status_.digits; digit++) printRadixOn(digit); }
+inline void printRadixOff(uint8_t digit) { if (digit < status_.digits) print_.buffer[addrGrid(digit)] &= ~0x80; }
+inline void printRadixOff() { for (uint8_t digit = 0; digit < status_.digits; digit++) printRadixOff(digit); }
+inline void printRadixToggle(uint8_t digit) { if (digit < status_.digits) print_.buffer[addrGrid(digit)] ^= 0x80; }
+inline void printRadixToggle() { for (uint8_t digit = 0; digit < status_.digits; digit++) printRadixToggle(digit); }
 
 
 /*
@@ -297,7 +297,7 @@ inline void printRadixToggle() { for (uint8_t digit = 0; digit < _status.digits;
 
   RETURN: none
 */
-inline void printDigit(uint8_t digit, uint8_t segmentMask) { if (digit < _status.digits) gridWrite(segmentMask, digit, digit); }
+inline void printDigit(uint8_t digit, uint8_t segmentMask) { if (digit < status_.digits) gridWrite(segmentMask, digit, digit); }
 inline void printDigit(uint8_t segmentMask) { gridWrite(segmentMask); }
 inline void printDigitOn(uint8_t digit) { printDigit(digit, 0x7F); }
 inline void printDigitOn() { printDigit(0x7F); }
@@ -320,7 +320,7 @@ inline void printDigitOff() { printDigit(0x00); }
 
   RETURN: none
 */
-inline void placePrint(uint8_t digit = 0) { if (digit < _status.digits) _print.digit = digit; };
+inline void placePrint(uint8_t digit = 0) { if (digit < status_.digits) print_.digit = digit; };
 
 
 /*
@@ -434,20 +434,20 @@ size_t write(const uint8_t* buffer, size_t size);
 
   RETURN: none
 */
-inline void printLedOnRed(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_RED; }
-inline void printLedOnRed() { for (uint8_t led = 0; led < _status.leds; led++) printLedOnRed(led); }
-inline void printLedToggleRed(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_GREEN; _print.buffer[addrLed(led)] ^= LED_RED; }
-inline void printLedToggleRed() { for (uint8_t led = 0; led < _status.leds; led++) printLedToggleRed(led); }
+inline void printLedOnRed(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] = LED_RED; }
+inline void printLedOnRed() { for (uint8_t led = 0; led < status_.leds; led++) printLedOnRed(led); }
+inline void printLedToggleRed(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] &= ~LED_GREEN; print_.buffer[addrLed(led)] ^= LED_RED; }
+inline void printLedToggleRed() { for (uint8_t led = 0; led < status_.leds; led++) printLedToggleRed(led); }
 //
-inline void printLedOnGreen(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_GREEN; }
-inline void printLedOnGreen() { for (uint8_t led = 0; led < _status.leds; led++) printLedOnGreen(led); }
-inline void printLedToggleGreen(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] &= ~LED_RED; _print.buffer[addrLed(led)] ^= LED_GREEN; }
-inline void printLedToggleGreen() { for (uint8_t led = 0; led < _status.leds; led++) printLedToggleGreen(led); }
+inline void printLedOnGreen(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] = LED_GREEN; }
+inline void printLedOnGreen() { for (uint8_t led = 0; led < status_.leds; led++) printLedOnGreen(led); }
+inline void printLedToggleGreen(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] &= ~LED_RED; print_.buffer[addrLed(led)] ^= LED_GREEN; }
+inline void printLedToggleGreen() { for (uint8_t led = 0; led < status_.leds; led++) printLedToggleGreen(led); }
 //
-inline void printLedOff(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = LED_OFF; }
-inline void printLedOff() { for (uint8_t led = 0; led < _status.leds; led++) printLedOff(led); }
-inline void printLedSwap(uint8_t led) { if (led < _status.leds) _print.buffer[addrLed(led)] = ~_print.buffer[addrLed(led)]; }
-inline void printLedSwap() { for (uint8_t led = 0; led < _status.leds; led++) printLedSwap(led); }
+inline void printLedOff(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] = LED_OFF; }
+inline void printLedOff() { for (uint8_t led = 0; led < status_.leds; led++) printLedOff(led); }
+inline void printLedSwap(uint8_t led) { if (led < status_.leds) print_.buffer[addrLed(led)] = ~print_.buffer[addrLed(led)]; }
+inline void printLedSwap() { for (uint8_t led = 0; led < status_.leds; led++) printLedSwap(led); }
 
 
 /*
@@ -484,8 +484,8 @@ void run();
 //------------------------------------------------------------------------------
 // Public setters - they usually return result code.
 //------------------------------------------------------------------------------
-inline void initLastResult() { _status.lastResult = SUCCESS; }
-inline uint8_t setLastResult(uint8_t lastResult = SUCCESS) { return _status.lastResult = lastResult; }
+inline void initLastResult() { status_.lastResult = SUCCESS; }
+inline uint8_t setLastResult(uint8_t lastResult = SUCCESS) { return status_.lastResult = lastResult; }
 
 
 /*
@@ -543,19 +543,19 @@ void setFont(const uint8_t* fontTable, uint8_t fontTableSize);
 //------------------------------------------------------------------------------
 // Public getters
 //------------------------------------------------------------------------------
-inline uint8_t getLastResult() { return _status.lastResult; } // Result of a recent operation
-inline uint8_t getLastCommand() { return _status.lastCommand; } // Command code of a recent operation
-inline uint8_t getDigits() { return _status.digits; } // Digital tubes for displaying
+inline uint8_t getLastResult() { return status_.lastResult; } // Result of a recent operation
+inline uint8_t getLastCommand() { return status_.lastCommand; } // Command code of a recent operation
+inline uint8_t getDigits() { return status_.digits; } // Digital tubes for displaying
 inline uint8_t getDigitsMax() { return DIGITS; } // Maximal supported digital tubes
-inline uint8_t getLeds() { return _status.leds; } // LEDs for displaying
+inline uint8_t getLeds() { return status_.leds; } // LEDs for displaying
 inline uint8_t getLedsMax() { return LEDS; } // Maximal supported LEDs
-inline uint8_t getKeys() { return _status.keys; } // Keys for processing
+inline uint8_t getKeys() { return status_.keys; } // Keys for processing
 inline uint8_t getKeysMax() { return KEYS; } // Maximal supported keys
 inline uint8_t getKeysMaxHw() { return GBJ_TM1638_KEYS_PRESENT; } // Hardware supported keys
-inline uint8_t getContrast() { return _status.contrast; } // Current contrast
+inline uint8_t getContrast() { return status_.contrast; } // Current contrast
 inline uint8_t getContrastMax() { return 7; } // Maximal contrast
-inline uint8_t getPrint() { return _print.digit; } // Current digit position
-inline bool isSuccess() { return _status.lastResult == SUCCESS; } // Flag about successful recent operation
+inline uint8_t getPrint() { return print_.digit; } // Current digit position
+inline bool isSuccess() { return status_.lastResult == SUCCESS; } // Flag about successful recent operation
 inline bool isError() { return !isSuccess(); } // Flag about erroneous recent operation
 
 
@@ -623,12 +623,12 @@ struct
 {
   uint8_t buffer[BYTES_ADDR];  // Screen buffer
   uint8_t digit; // Current digit for next printing
-} _print; // Display hardware parameters for printing
+} print_; // Display hardware parameters for printing
 struct Bitmap
 {
   const uint8_t* table; // Pointer to a font table
   uint8_t glyphs; // Number of glyphs in the font table
-} _font;  // Font parameters
+} font_;  // Font parameters
 struct
 {
   uint8_t lastResult; // Result of a recent operation
@@ -641,16 +641,16 @@ struct
   uint8_t keys; // Amount of controlled keys
   uint8_t contrast; // Current contrast level
   uint32_t scanTimestamp; // Recent keypad scanning time
-} _status;  // Microcontroller status features
+} status_;  // Microcontroller status features
 struct
 {
   uint8_t pressScans;  // Number of continuous scanning at pressed key
   uint8_t waitScans;  // Number of continuous scanning at released key
   uint8_t keyState[5]; // Key state history
-} _keys[GBJ_TM1638_KEYS_PRESENT]; // Display module key records list
+} keys_[GBJ_TM1638_KEYS_PRESENT]; // Display module key records list
 
 // Pointers to global (default) alarm handlers
-gbj_tm1638_handler _keyProcesing;
+gbj_tm1638_handler keyProcesing_;
 
 
 //------------------------------------------------------------------------------
@@ -659,7 +659,7 @@ gbj_tm1638_handler _keyProcesing;
 inline void swapByte(uint8_t a, uint8_t b) { if (a > b) {uint8_t t = a; a = b; b = t;} }
 inline uint8_t addrGrid(uint8_t digit) { return 2 * digit; }
 inline uint8_t addrLed(uint8_t led) { return 2 * led + 1; }
-inline uint8_t setLastCommand(uint8_t lastCommand) { return _status.lastCommand = lastCommand; }
+inline uint8_t setLastCommand(uint8_t lastCommand) { return status_.lastCommand = lastCommand; }
 void waitPulseClk();  // Delay for clock pulse duration
 void gridWrite(uint8_t segmentMask = 0x00, uint8_t gridStart = 0, uint8_t gridStop = DIGITS); // Fill screen buffer with digit masks
 void beginTransmission(); // Start condition
